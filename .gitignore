@@ -1,0 +1,24 @@
+**/__pycache__/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# User data files
+lib/users.json
+lib/topup_operator_msisdns.json
+
+# Generated config files (users create their own)
+configs/*.yaml
+!configs/.gitkeep
+
+# Testing and debugging files
+test_*.py
+debug_*.py
+generate_*.py
+extract_*.py
+*.log
+*.sh
+temp_*
