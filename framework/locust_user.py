@@ -41,7 +41,7 @@ class ConfigDrivenUser(FastHttpUser):
                     if not self.__class__._init_completed:
                         logging.info("Running shared initialization (once for all users in the list)...")
 
-                        user_list_var = self.config.get('init_user_list')
+                        user_list_var = self.config.get('init_list_var')
                         if user_list_var:
                             user_list = self.config.get('variables', {}).get(user_list_var, [])
                             if not user_list:
