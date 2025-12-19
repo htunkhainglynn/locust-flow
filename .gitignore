@@ -11,8 +11,8 @@ lib/users.json
 lib/topup_operator_msisdns.json
 
 # Generated config files (users create their own)
-configs/*.yaml
-!configs/.gitkeep
+configs/*
+!configs/.writeconfighere
 
 # Debugging files
 debug_*.py
