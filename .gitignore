@@ -30,3 +30,8 @@ coverage.xml
 
 # Safety project config
 .safety-project.ini
+
+# Environment variables
+.env
+.env.local
+.env.*.local

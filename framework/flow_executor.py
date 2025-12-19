@@ -331,17 +331,24 @@ class FlowExecutor:
         except Exception:
             return None
 
-    @staticmethod
-    def _validate_response(step: Dict[str, Any], response: requests.Response):
+    def _validate_response(self, step: Dict[str, Any], response: requests.Response):
         validations = step.get('validate', [])
 
+        # Handle new field-based validation format
         if isinstance(validations, list):
+            for validation in validations:
+                if isinstance(validation, dict) and 'field' in validation:
+                    # New format: {field: "...", condition: "...", expected: "..."}
+                    self._validate_field(validation, response)
+            
+            # Also support old format mixed in list
             validation_dict = {}
             for validation in validations:
-                if isinstance(validation, dict):
+                if isinstance(validation, dict) and 'field' not in validation:
                     validation_dict.update(validation)
             validations = validation_dict
-
+        
+        # Old format validation (backward compatibility)
         fail_on_error = validations.get('fail_on_error', False)
         expected_status = validations.get('status_code')
         if expected_status:
@@ -366,8 +373,84 @@ class FlowExecutor:
                     if actual_value != expected_value:
                         raise AssertionError(
                             f"JSON validation failed for '{path}': expected {expected_value}, got {actual_value}")
-            except json.JSONDecodeError:
+            except (json.JSONDecodeError, ValueError):
                 raise AssertionError("Response is not valid JSON")
+    
+    def _validate_field(self, validation: Dict[str, Any], response: requests.Response):
+        """Validate a single field with condition-based logic."""
+        field = validation.get('field', '')
+        condition = validation.get('condition', '')
+        expected = validation.get('expected', '')
+        
+        # Store response in context for template rendering
+        self.context['response'] = {
+            'status_code': response.status_code,
+            'text': response.text,
+            'headers': dict(response.headers)
+        }
+        
+        # Try to parse response as JSON
+        try:
+            response_json = response.json()
+            self.context['response']['json'] = response_json
+        except (json.JSONDecodeError, ValueError):
+            pass
+        
+        # Render field path with template engine
+        field_path = self.template_engine.render(field, self.context)
+        
+        # Extract actual value from response
+        actual_value = self._extract_field_value(field_path, response)
+        
+        # Render expected value with template engine
+        expected_value = self.template_engine.render(str(expected), self.context)
+        
+        # Evaluate condition
+        # For is_not_empty, we check if the value is not empty (expected is ignored)
+        if condition == 'is_not_empty':
+            result = bool(actual_value) and actual_value != '' and actual_value != 'None'
+        elif condition == 'is_empty':
+            result = not actual_value or actual_value == '' or actual_value == 'None'
+        else:
+            result = self._evaluate_single_condition(condition, actual_value, expected_value)
+        
+        if not result:
+            raise AssertionError(
+                f"Validation failed for field '{field}': "
+                f"expected {condition} '{expected_value}', got '{actual_value}'"
+            )
+    
+    def _extract_field_value(self, field_path: str, response: requests.Response):
+        """Extract value from response based on field path."""
+        # Handle special response fields
+        if field_path == 'response.status_code':
+            return str(response.status_code)
+        elif field_path == 'response.text':
+            return response.text
+        elif field_path.startswith('headers.'):
+            header_name = field_path.replace('headers.', '')
+            return response.headers.get(header_name, '')
+        elif field_path.startswith('response.'):
+            # Extract from JSON response
+            json_path = field_path.replace('response.', '')
+            try:
+                response_json = response.json()
+                return self._get_nested_value(response_json, json_path)
+            except (json.JSONDecodeError, ValueError):
+                return None
+        else:
+            return None
+    
+    def _get_nested_value(self, data: dict, path: str):
+        """Get nested value from dict using dot notation."""
+        keys = path.split('.')
+        value = data
+        for key in keys:
+            if isinstance(value, dict):
+                value = value.get(key)
+            else:
+                return None
+        return str(value) if value is not None else None
 
     def get_context(self) -> Dict[str, Any]:
         """Get current execution context."""
