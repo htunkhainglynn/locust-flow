@@ -3,6 +3,9 @@
 ## Quick Start
 
 ```bash
+# 0. Create config file
+make generate-config
+
 # 1. Install dependencies
 make install-dev
 
