@@ -1,96 +1,210 @@
-# How to Run Locust Flow
+# How to Run
+
+## Quick Start
+
+```bash
+# 1. Install dependencies
+make install-dev
+
+# 2. Run tests
+make test
+
+# 3. Start load testing
+make run
+```
+
+Open `http://localhost:8089` in your browser.
+
+---
 
 ## Prerequisites
 
-- Python 3.8 or higher
-- pip (Python package manager)
+- Python 3.8+
+- pip
+- make (optional)
+
+---
 
 ## Installation
 
-### 1. Create a Virtual Environment (Recommended)
+### Using Makefile (Recommended)
 
-**Important:** The virtual environment (`.venv/` or `venv/`) is not included in the repository. You must create it on your machine.
+```bash
+# Production dependencies only
+make install
+
+# With dev tools (testing, linting, security)
+make install-dev
+```
+
+### Manual Installation
 
 ```bash
 # Create virtual environment
 python3 -m venv .venv
+source .venv/bin/activate  # macOS/Linux
+# .venv\Scripts\activate   # Windows
 
-# Activate virtual environment
-# On macOS/Linux:
-source .venv/bin/activate
-
-# On Windows:
-.venv\Scripts\activate
-```
-
-**Note:** If you prefer using `venv` instead of `.venv`, that works too:
-```bash
-python3 -m venv venv
-source venv/bin/activate  # macOS/Linux
-venv\Scripts\activate     # Windows
-```
-
-### 2. Install Dependencies
-
-```bash
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-**Note:** The requirements.txt uses flexible version ranges for compatibility across different systems and Python versions. If you encounter any issues, try upgrading pip first:
-
-```bash
-pip install --upgrade pip
-```
+---
 
 ## Running Load Tests
 
-### Option 1: Generate a Config First (Recommended for New Users)
+### Start Web UI
 
 ```bash
-# Generate a minimal config template
-python config_generator.py
-
-# Follow the prompts to create your config file
-# Files are saved to configs/ directory
+make run
 ```
 
-### Option 2: Run with Existing Configs
+Then open `http://localhost:8089`
+
+### Headless Mode
 
 ```bash
-# Run with web UI (interactive mode)
+make run-headless
+# Runs: 10 users, 2/sec spawn rate, 60 seconds
+```
+
+### Manual Commands
+
+```bash
+# Web UI
 locust -f main.py
 
-# Then open http://localhost:8089 in your browser
+# Headless
+locust -f main.py --headless -u 10 -r 2 -t 60s
+
+# Custom port
+locust -f main.py --web-port 8090
 ```
 
-### Option 3: Run Headless (No Web UI)
+---
+
+## Development
+
+### Testing
 
 ```bash
-# Run with 10 users, spawn rate of 2 users/sec, for 60 seconds
-locust -f main.py --headless -u 10 -r 2 -t 60s
+make test           # Run unit tests
+make test-verbose   # Verbose output
+make coverage       # Coverage report (htmlcov/index.html)
 ```
 
-## Web UI Usage
+### Code Quality
 
-1. Open http://localhost:8089 in your browser
-2. Select the user class (corresponds to your config file)
-3. Set number of users and spawn rate
-4. Click "Start swarming"
-5. Monitor real-time statistics and graphs
+```bash
+make lint           # Run linters
+make format         # Auto-format code
+make format-check   # Check formatting
+```
+
+### Security
+
+```bash
+make security       # All security scans
+make bandit         # Bandit scanner
+make safety         # Dependency check
+```
+
+### Validation
+
+```bash
+make validate-configs  # Validate YAML configs
+```
+
+### CI Checks
+
+```bash
+make ci    # Run all checks (test, lint, security, validate)
+make all   # Install + all checks
+```
+
+### Cleanup
+
+```bash
+make clean  # Remove cache, logs, coverage files
+```
+
+---
+
+## Configuration
+
+### Create New Config
+
+```bash
+python config_generator.py
+```
+
+Follow prompts to generate `configs/your_service.yaml`
+
+### Config Location
+
+Place YAML configs in `configs/` directory:
+- `configs/test.yaml`
+- `configs/test-wave-pay.yaml`
+- `configs/your_service.yaml`
+
+---
 
 ## Troubleshooting
 
 ### Import Errors
-If you get import errors, ensure all dependencies are installed:
+
 ```bash
 pip install -r requirements.txt --upgrade
 ```
 
 ### Port Already in Use
-If port 8089 is already in use, specify a different port:
+
 ```bash
 locust -f main.py --web-port 8090
 ```
 
 ### Config Not Found
-Ensure your config files are in the `configs/` directory with `.yaml` extension.
+
+Ensure config files are in `configs/` with `.yaml` extension.
+
+### Dev Tools Not Found
+
+```bash
+make install-dev
+```
+
+---
+
+## Workflow
+
+```bash
+# 1. Setup
+make install-dev
+
+# 2. Make changes
+# ... edit code ...
+
+# 3. Format
+make format
+
+# 4. Check
+make ci
+
+# 5. Commit
+git add .
+git commit -m "Your changes"
+git push
+```
+
+---
+
+## Help
+
+```bash
+make help  # Show all commands
+```
+
+For more details, see:
+- `README.md` - Project overview
+- `tests/README.md` - Testing guide
+- `.github/workflows/README.md` - CI/CD docs

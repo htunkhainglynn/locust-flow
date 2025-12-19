@@ -14,11 +14,16 @@ lib/topup_operator_msisdns.json
 configs/*.yaml
 !configs/.gitkeep
 
-# Testing and debugging files
-test_*.py
+# Debugging files
 debug_*.py
 generate_*.py
 extract_*.py
 *.log
 *.sh
 temp_*
+
+# Coverage reports
+htmlcov/
+.coverage
+coverage.xml
+.pytest_cache/
