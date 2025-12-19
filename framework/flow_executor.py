@@ -482,7 +482,7 @@ class FlowExecutor:
             return self._evaluate_single_condition(condition_type, left_value, right_value)
 
     @staticmethod
-    def _evaluate_single_condition(self, condition_type: str, left_value: Any, right_value: Any) -> bool:
+    def _evaluate_single_condition(condition_type: str, left_value: Any, right_value: Any) -> bool:
         """Evaluate a single condition."""
         if condition_type == 'equals':
             return str(left_value) == str(right_value)
