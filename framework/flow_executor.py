@@ -15,7 +15,7 @@ except ImportError:
 
 class FlowExecutor:
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
         self.template_engine = TemplateEngine()
         self.context = {}
@@ -37,10 +37,6 @@ class FlowExecutor:
         }
 
         try:
-            setup_steps = self.config.get('setup', [])
-            for step in setup_steps:
-                self._execute_step(step, is_setup=True)
-
             steps = self.config.get('steps', [])
             for i, step in enumerate(steps):
                 step_result = self._execute_step(step, step_index=i)
@@ -51,10 +47,6 @@ class FlowExecutor:
                     if step.get('fail_fast', True):
                         break
 
-            cleanup_steps = self.config.get('cleanup', [])
-            for step in cleanup_steps:
-                self._execute_step(step, is_cleanup=True)
-
         except Exception as e:
             results['success'] = False
             results['error'] = str(e)
@@ -62,8 +54,11 @@ class FlowExecutor:
 
         return results
 
-    def _execute_step(self, step: Dict[str, Any], step_index: int = 0, is_setup: bool = False,
-                      is_cleanup: bool = False) -> Dict[str, Any]:
+    def _execute_step(self, step: Dict[str, Any], step_index: int = 0, is_init: bool = False) -> Dict[str, Any]:
+        """
+
+        :rtype: Dict[str, Any]
+        """
         step_result = {
             'name': step.get('name', f'Step {step_index + 1}'),
             'success': True,
@@ -82,8 +77,7 @@ class FlowExecutor:
                 logging.info(f"Step '{step_result['name']}' skipped due to skip_if condition")
                 return step_result
 
-            if not is_cleanup:
-                self._execute_http_step(step, step_result, is_init=is_setup)
+            self._execute_http_step(step, step_result, is_init=is_init)
 
             self._apply_transforms(step.get('post_transforms', []))
 
@@ -95,28 +89,56 @@ class FlowExecutor:
         return step_result
 
     def _execute_http_step(self, step: Dict[str, Any], step_result: Dict[str, Any], is_init: bool) -> None:
-        response = self._make_request(step)
-        step_result['status_code'] = response.status_code
-        step_result['response_time'] = response.elapsed.total_seconds() * 1000
+        retry_config = step.get('retry_on', {})
+        max_retries = retry_config.get('max_retries', 3) if retry_config else 1
+        retry_count = 0
+        
+        while retry_count < max_retries:
+            response = self._make_request(step)
+            step_result['status_code'] = response.status_code
+            step_result['response_time'] = response.elapsed.total_seconds() * 1000
 
-        if is_init:
-            logging.info(
-                f"Init step '{step_result['name']}' - Status: {response.status_code}, Response Time: {step_result['response_time']:.0f}ms")
-            if response.status_code >= 400:
-                logging.error(f"Init step '{step_result['name']}' failed!")
-                logging.error(f"Request URL: {response.request.url}")
-                logging.error(f"Request Headers: {dict(response.request.headers)}")
-                if response.request.body:
-                    logging.error(f"Request Body: {response.request.body[:500]}")
-                logging.error(f"Response Body: {response.text[:500]}")
+            if is_init:
+                logging.info(
+                    f"Init step '{step_result['name']}' - Status: {response.status_code}, Response Time: {step_result['response_time']:.0f}ms")
+                if response.status_code >= 400:
+                    logging.error(f"Init step '{step_result['name']}' failed!")
+                    logging.error(f"Request URL: {response.request.url}")
+                    logging.error(f"Request Headers: {dict(response.request.headers)}")
+                    if response.request.body:
+                        logging.error(f"Request Body: {response.request.body[:500]}")
+                    logging.error(f"Response Body: {response.text[:500]}")
+                else:
+                    logging.debug(f"Init response body: {response.text[:500]}...")
             else:
-                logging.debug(f"Init response body: {response.text[:500]}...")
-        else:
-            logging.info(
-                f"Step '{step_result['name']}' - Status: {response.status_code}, Response Time: {step_result['response_time']:.0f}ms")
-            logging.debug(f"Response body: {response.text[:500]}...")
+                logging.info(
+                    f"Step '{step_result['name']}' - Status: {response.status_code}, Response Time: {step_result['response_time']:.0f}ms")
+                logging.debug(f"Response body: {response.text[:500]}...")
 
-        self._extract_variables(step, response)
+            self._extract_variables(step, response)
+            
+            # Check if we should retry this step
+            if self._should_retry_step(step, response):
+                retry_count += 1
+                if retry_count < max_retries:
+                    retry_config = step.get('retry_on', {})
+                    action_step = retry_config.get('action')
+                    if action_step:
+                        logging.info(f"Retry condition met, executing action: '{action_step}' (attempt {retry_count + 1}/{max_retries})")
+                        referenced_step = self._find_step_by_name(action_step)
+                        if referenced_step:
+                            action_response = self._make_request(referenced_step)
+                            self._extract_variables(referenced_step, action_response)
+                            self._validate_response(referenced_step, action_response)
+                        else:
+                            logging.warning(f"Action step '{action_step}' not found")
+                    continue
+                else:
+                    logging.warning(f"Max retries ({max_retries}) reached for step '{step_result['name']}'")
+                    break
+            else:
+                break
+        
         self._validate_response(step, response)
 
     def _make_request(self, step: Dict[str, Any]) -> requests.Response:
@@ -424,3 +446,75 @@ class FlowExecutor:
             return bool(left_value) and left_value != '' and left_value != [] and left_value != {}
 
         return False
+
+    def _should_retry_step(self, step: Dict[str, Any], response: requests.Response) -> bool:
+        """Check if a step should be retried based on retry_on condition."""
+        retry_on = step.get('retry_on')
+        if not retry_on:
+            return False
+
+        condition_type = retry_on.get('condition')
+        left_value = retry_on.get('left', '')
+        right_value = retry_on.get('right', '')
+        
+        # Store response in context for template rendering
+        self.context['response'] = {
+            'status_code': response.status_code,
+            'text': response.text,
+            'headers': dict(response.headers)
+        }
+        
+        # Render template variables
+        left_value = self.template_engine.render(str(left_value), self.context)
+        right_value = self.template_engine.render(str(right_value), self.context)
+
+        # Check for logical operators in right value
+        if '||' in str(right_value):
+            # OR logic: check if left matches any of the right values
+            right_values = [v.strip() for v in str(right_value).split('||')]
+            return self._evaluate_condition_with_or(condition_type, left_value, right_values)
+        elif '&&' in str(right_value):
+            # AND logic: check if left matches all right values
+            right_values = [v.strip() for v in str(right_value).split('&&')]
+            return self._evaluate_condition_with_and(condition_type, left_value, right_values)
+        else:
+            # Single condition
+            return self._evaluate_single_condition(condition_type, left_value, right_value)
+
+    @staticmethod
+    def _evaluate_single_condition(self, condition_type: str, left_value: Any, right_value: Any) -> bool:
+        """Evaluate a single condition."""
+        if condition_type == 'equals':
+            return str(left_value) == str(right_value)
+        elif condition_type == 'not_equals':
+            return str(left_value) != str(right_value)
+        elif condition_type == 'contains':
+            return str(right_value) in str(left_value)
+        elif condition_type == 'not_contains':
+            return str(right_value) not in str(left_value)
+        elif condition_type == 'greater_than':
+            try:
+                return float(left_value) > float(right_value)
+            except (ValueError, TypeError):
+                return False
+        elif condition_type == 'less_than':
+            try:
+                return float(left_value) < float(right_value)
+            except (ValueError, TypeError):
+                return False
+
+        return False
+
+    def _evaluate_condition_with_or(self, condition_type: str, left_value: Any, right_values: list) -> bool:
+        """Evaluate condition with OR logic - returns True if ANY condition matches."""
+        for right_val in right_values:
+            if self._evaluate_single_condition(condition_type, left_value, right_val):
+                return True
+        return False
+    
+    def _evaluate_condition_with_and(self, condition_type: str, left_value: Any, right_values: list) -> bool:
+        """Evaluate condition with AND logic - returns True if ALL conditions match."""
+        for right_val in right_values:
+            if not self._evaluate_single_condition(condition_type, left_value, right_val):
+                return False
+        return True

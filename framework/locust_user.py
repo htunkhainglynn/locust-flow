@@ -52,12 +52,12 @@ class ConfigDrivenUser(FastHttpUser):
                             for idx, user_id in enumerate(user_list):
                                 logging.info(f"Initializing user {idx + 1}/{len(user_list)}: {user_id}")
                                 
-                                user_flow_executor = FlowExecutor(self.config)
+                                user_flow_executor: FlowExecutor = FlowExecutor(self.config)
                                 user_flow_executor.context['_data_store'] = self.__class__._data_store
                                 
                                 init_steps = self.config.get('init', [])
                                 for step in init_steps:
-                                    user_flow_executor._execute_step(step, is_setup=True)
+                                    user_flow_executor._execute_step(step, is_init=True)
                         else:
                             logging.info("No init_user_list specified, running init once with default context")
                             shared_flow_executor = FlowExecutor(self.config)
@@ -65,7 +65,7 @@ class ConfigDrivenUser(FastHttpUser):
                             
                             init_steps = self.config.get('init', [])
                             for step in init_steps:
-                                shared_flow_executor._execute_step(step, is_setup=True)
+                                shared_flow_executor._execute_step(step, is_init=True)
                             
                             user_flow_executor = shared_flow_executor
 
@@ -91,7 +91,7 @@ class ConfigDrivenUser(FastHttpUser):
                 self.flow_executor.context['_data_store'] = self.__class__._data_store
                 init_steps = self.config.get('init', [])
                 for step in init_steps:
-                    self.flow_executor._execute_step(step, is_setup=True)
+                    self.flow_executor._execute_step(step, is_init=True)
 
                 logging.info(f"Initialized user for service: {self.config.get('service_name')}")
 
