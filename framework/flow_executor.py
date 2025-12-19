@@ -1,7 +1,7 @@
 import json
 import logging
 import requests
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from .template_engine import TemplateEngine
 from .plugins.registry import plugin_registry
 
@@ -399,7 +399,7 @@ class FlowExecutor:
                 if 'validate' in pre_request:
                     self._validate_response(pre_request, response)
 
-    def _find_step_by_name(self, step_name: str) -> Any | None:
+    def _find_step_by_name(self, step_name: str) -> Optional[Any]:
         init_steps = self.config.get('init', [])
         for step in init_steps:
             if step.get('name') == step_name:

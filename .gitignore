@@ -27,3 +27,6 @@ htmlcov/
 .coverage
 coverage.xml
 .pytest_cache/
+
+# Safety project config
+.safety-project.ini
