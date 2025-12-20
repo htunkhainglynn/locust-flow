@@ -88,20 +88,22 @@ steps:
 
 **Run it:**
 ```bash
-locust -f main.py
+make run
 ```
 
 **What happens:**
-1. Logs in 5 users once at startup
-2. 100 virtual users make requests using those 5 accounts
-3. 50% browse, 30% add to cart, 20% checkout
-4. Random quantities, validated responses
+1. Validates config automatically
+2. Logs in 5 users once at startup
+3. 100 virtual users make requests using those 5 accounts
+4. 50% browse, 30% add to cart, 20% checkout
+5. Random quantities, validated responses
 
 ---
 
 ## Features
 
 - ✅ **Zero Code** - Just YAML config files
+- ✅ **Config Validation** - Catch errors before runtime
 - ✅ **Multi-User** - Test with 50+ accounts, realistic load
 - ✅ **Smart Data** - Random numbers, UUIDs, encryption, timestamps
 - ✅ **Auth Flows** - Complex multi-step authentication
@@ -111,10 +113,37 @@ locust -f main.py
 
 ---
 
-## Installation
+## Quick Start
 
+### 1. Install Dependencies
 ```bash
-pip install -r requirements.txt
+make install
+```
+
+### 2. Validate Your Config
+```bash
+make validate-configs
+```
+
+### 3. Run Load Test
+```bash
+# Web UI (recommended)
+make run
+
+# Headless mode
+make run-headless
+```
+
+**Why use `make`?**
+- ✅ Validates configs before running (prevents runtime errors)
+- ✅ Consistent commands across environments
+- ✅ Automatic error handling
+- ✅ Built-in best practices
+
+### Manual Run (Not Recommended)
+```bash
+# Only if you can't use make
+python validate_config.py configs/*.yaml  # Validate first!
 locust -f main.py
 # Open http://localhost:8089
 ```
@@ -309,15 +338,45 @@ pre_transforms:
 
 ---
 
+## Available Commands
+
+```bash
+# Setup
+make install          # Install dependencies
+make install-dev      # Install dev dependencies
+
+# Validation
+make validate-configs # Validate all YAML configs
+
+# Testing
+make test             # Run unit tests
+make coverage         # Run tests with coverage report
+
+# Running
+make run              # Start Locust web UI (validates first)
+make run-headless     # Run headless load test (validates first)
+
+# Code Quality
+make lint             # Run linters
+make format           # Format code
+
+# CI/CD
+make ci               # Run all CI checks
+make all              # Run everything
+```
+
+---
+
 ## Tips
 
-1. Use `run_init_once: true` for faster tests
-2. Add `init_list_var` to specify which variable contains accounts
-3. Use `round_robin` for even distribution
-4. Use `random` for realistic patterns
-5. Set weights to match real behavior
-6. Store tokens to avoid re-authentication
-7. Validate responses to catch errors
+1. **Always use `make run`** - It validates configs before starting
+2. Use `run_init_once: true` for faster tests
+3. Add `init_list_var` to specify which variable contains accounts
+4. Use `round_robin` for even distribution
+5. Use `random` for realistic patterns
+6. Set weights to match real behavior (0-1 range)
+7. Store tokens to avoid re-authentication
+8. Validate responses to catch errors early
 
 ---
 
