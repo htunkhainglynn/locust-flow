@@ -2,11 +2,14 @@ import os
 import yaml
 import json
 from typing import Dict, Any
+from framework.config_validator import ConfigValidator
 
 
 class ConfigLoader:
-    def __init__(self, config_dir: str = "configs"):
+    def __init__(self, config_dir: str = "configs", validate: bool = True):
         self.config_dir = config_dir
+        self.validate = validate
+        self.validator = ConfigValidator()
     
     def load_config(self, config_file: str) -> Dict[str, Any]:
         """
@@ -46,14 +49,19 @@ class ConfigLoader:
                     f.seek(0)
                     config = json.load(f)
         
-        # Validate required fields
-        self._validate_config(config)
+        # Validate configuration
+        if self.validate:
+            is_valid, errors, warnings = self.validator.validate(config, config_file)
+            if not is_valid:
+                error_msg = f"Config validation failed for '{config_file}':\n"
+                error_msg += "\n".join([f"  - {err}" for err in errors])
+                raise ValueError(error_msg)
         
         return config
 
     @staticmethod
     def _validate_config(config: Dict[str, Any]):
-        """Validate the configuration structure."""
+        """Legacy validation method - kept for backward compatibility."""
         required_fields = ['service_name', 'base_url']
 
         for field in required_fields:

@@ -96,17 +96,21 @@ generate-config:
 	python config_generator.py
 
 validate-configs:
-	@echo "Validating YAML config files..."
-	yamllint -d relaxed configs/ || true
-	@echo "\nTesting config loading..."
-	@python -c "from framework.config_loader import ConfigLoader; import os; import glob; loader = ConfigLoader(); config_files = glob.glob('configs/*.yaml'); [print(f'✓ {cf} is valid') if (lambda: (loader.load_config(cf), True)[1])() else print(f'✗ {cf} failed') for cf in config_files if os.path.basename(cf) != '.gitkeep']" || true
+	@output=$$(python validate_config.py configs/*.yaml configs/*.yml 2>&1); \
+	if [ $$? -eq 0 ]; then \
+		echo "Config validation passed"; \
+		exit 0; \
+	else \
+		echo "$$output"; \
+		exit 1; \
+	fi
 
-run:
+run: validate-configs
 	@echo "Starting Locust web UI..."
 	@echo "Open http://localhost:8089 in your browser"
 	locust -f main.py
 
-run-headless:
+run-headless: validate-configs
 	@echo "Running headless load test..."
 	@echo "Users: 10, Spawn rate: 2, Duration: 60s"
 	locust -f main.py --headless -u 10 -r 2 -t 60s

@@ -114,6 +114,23 @@ class ConfigDrivenUser(FastHttpUser):
                 step_name = step.get('name', f'Step {i + 1}')
 
                 weight = step.get('weight', 1)
+                
+                # Cast weight to float if it's a string number
+                if isinstance(weight, str):
+                    try:
+                        weight = float(weight)
+                    except (ValueError, TypeError):
+                        logging.warning(f"Invalid weight '{weight}' for step '{step_name}', using default 1")
+                        weight = 1
+                
+                # Validate weight range at runtime
+                if not isinstance(weight, (int, float)):
+                    logging.warning(f"Weight must be a number for step '{step_name}', using default 1")
+                    weight = 1
+                elif weight < 0 or weight > 1:
+                    logging.warning(f"Weight {weight} is out of range (0-1) for step '{step_name}', clamping to valid range")
+                    weight = max(0, min(1, weight))  # Clamp to 0-1 range
+                
                 if weight < 1 and random.random() > weight:
                     continue
 

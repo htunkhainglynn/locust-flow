@@ -49,7 +49,14 @@ class TestConfigLoader(unittest.TestCase):
         
         config_data = {
             "service_name": "Test API",
-            "base_url": "https://api.test.com"
+            "base_url": "https://api.test.com",
+            "steps": [
+                {
+                    "name": "Test Step",
+                    "method": "GET",
+                    "endpoint": "/test"
+                }
+            ]
         }
         
         config_file = os.path.join(self.temp_dir, "test_config.json")
