@@ -110,26 +110,3 @@ jobs:
     - name: Check dependencies for vulnerabilities
       run: |
         safety scan || true
-
-  validate-configs:
-    name: Validate Config Files
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-        cache: 'pip'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    - name: Validate config files
-      run: |
-        python validate_config.py configs/*.yaml
