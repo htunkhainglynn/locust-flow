@@ -63,9 +63,11 @@ install-hooks:
 	@echo '' >> .git/hooks/pre-commit
 	@echo '# Run tests' >> .git/hooks/pre-commit
 	@echo 'echo "2/3 Running tests..."' >> .git/hooks/pre-commit
-	@echo 'make test > /dev/null 2>&1' >> .git/hooks/pre-commit
+	@echo 'test_output=$$(make test 2>&1)' >> .git/hooks/pre-commit
 	@echo 'if [ $$? -ne 0 ]; then' >> .git/hooks/pre-commit
-	@echo '    echo "Tests failed! Commit aborted."' >> .git/hooks/pre-commit
+	@echo '    echo "$$test_output" | grep -v "ERROR:root:" | grep -v "WARNING:root:" | grep -E "(FAILED|Traceback|File.*line|AssertionError)" | tail -10' >> .git/hooks/pre-commit
+	@echo '    echo ""' >> .git/hooks/pre-commit
+	@echo '    echo "Tests failed! Run '\''make test'\'' for full output."' >> .git/hooks/pre-commit
 	@echo '    exit 1' >> .git/hooks/pre-commit
 	@echo 'fi' >> .git/hooks/pre-commit
 	@echo '' >> .git/hooks/pre-commit
@@ -83,7 +85,7 @@ install-hooks:
 	@echo ""
 	@echo "The hook will run before each commit:"
 	@echo "  1. Format code (black, isort)"
-	@echo "  2. Run unit tests"
+	@echo "  2. Run unit tests (shows output on failure)"
 	@echo "  3. Lint code (flake8)"
 	@echo ""
 	@echo "To skip the hook, use: git commit --no-verify"
