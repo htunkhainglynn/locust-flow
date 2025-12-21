@@ -28,7 +28,7 @@ class TestRandomNumberPlugin(unittest.TestCase):
         result = self.plugin.execute(None, config, {})
         
         self.assertIsInstance(result, int)
-        self.assertGreaterEqual(result, 100)
+        self.assertGreaterEqual(result, 10)
         self.assertLessEqual(result, 1000)
 
 

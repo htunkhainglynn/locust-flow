@@ -4,6 +4,7 @@ help:
 	@echo "Setup:"
 	@echo "  make install          Install dependencies"
 	@echo "  make install-dev      Install dev dependencies"
+	@echo "  make install-hooks    Install git pre-commit hooks"
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test             Run unit tests"
@@ -45,6 +46,47 @@ install-dev:
 	@echo "Installing dev dependencies..."
 	pip install -r requirements.txt
 	pip install pytest pytest-cov flake8 pylint black isort bandit safety yamllint
+
+install-hooks:
+	@echo "Installing git pre-commit hooks..."
+	@if [ ! -d .git ]; then \
+		echo "Error: Not a git repository. Run 'git init' first."; \
+		exit 1; \
+	fi
+	@echo '#!/bin/bash' > .git/hooks/pre-commit
+	@echo '' >> .git/hooks/pre-commit
+	@echo 'echo "Running pre-commit checks..."' >> .git/hooks/pre-commit
+	@echo '' >> .git/hooks/pre-commit
+	@echo '# Format code' >> .git/hooks/pre-commit
+	@echo 'echo "1/3 Formatting code..."' >> .git/hooks/pre-commit
+	@echo 'make format > /dev/null 2>&1' >> .git/hooks/pre-commit
+	@echo '' >> .git/hooks/pre-commit
+	@echo '# Run tests' >> .git/hooks/pre-commit
+	@echo 'echo "2/3 Running tests..."' >> .git/hooks/pre-commit
+	@echo 'make test > /dev/null 2>&1' >> .git/hooks/pre-commit
+	@echo 'if [ $$? -ne 0 ]; then' >> .git/hooks/pre-commit
+	@echo '    echo "Tests failed! Commit aborted."' >> .git/hooks/pre-commit
+	@echo '    exit 1' >> .git/hooks/pre-commit
+	@echo 'fi' >> .git/hooks/pre-commit
+	@echo '' >> .git/hooks/pre-commit
+	@echo '# Lint code' >> .git/hooks/pre-commit
+	@echo 'echo "3/3 Linting code..."' >> .git/hooks/pre-commit
+	@echo 'flake8 framework/ tests/ --max-line-length=127 --exclude=__pycache__,.venv --select=E9,F63,F7,F82' >> .git/hooks/pre-commit
+	@echo 'if [ $$? -ne 0 ]; then' >> .git/hooks/pre-commit
+	@echo '    echo "Linting failed! Commit aborted."' >> .git/hooks/pre-commit
+	@echo '    exit 1' >> .git/hooks/pre-commit
+	@echo 'fi' >> .git/hooks/pre-commit
+	@echo '' >> .git/hooks/pre-commit
+	@echo 'echo "All checks passed!"' >> .git/hooks/pre-commit
+	@chmod +x .git/hooks/pre-commit
+	@echo "Pre-commit hooks installed successfully!"
+	@echo ""
+	@echo "The hook will run before each commit:"
+	@echo "  1. Format code (black, isort)"
+	@echo "  2. Run unit tests"
+	@echo "  3. Lint code (flake8)"
+	@echo ""
+	@echo "To skip the hook, use: git commit --no-verify"
 
 test:
 	@echo "Running unit tests..."
