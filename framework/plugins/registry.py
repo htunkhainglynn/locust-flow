@@ -1,8 +1,12 @@
 from typing import Dict, Type
+
 from .base import BasePlugin
-from .encryption import RSAEncryptPlugin, HMACPlugin, SHA256Plugin, Base64EncodePlugin, Base64DecodePlugin
-from .generators import UUIDPlugin, TimestampPlugin, RandomNumberPlugin, RandomChoicePlugin, RandomStringPlugin, \
-    IncrementPlugin, SelectFromListPlugin, SelectMsisdnPlugin, StoreDataPlugin
+from .encryption import (Base64DecodePlugin, Base64EncodePlugin, HMACPlugin,
+                         RSAEncryptPlugin, SHA256Plugin)
+from .generators import (IncrementPlugin, RandomChoicePlugin,
+                         RandomNumberPlugin, RandomStringPlugin,
+                         SelectFromListPlugin, SelectMsisdnPlugin,
+                         StoreDataPlugin, TimestampPlugin, UUIDPlugin)
 
 
 class PluginRegistry:

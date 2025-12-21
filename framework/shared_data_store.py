@@ -1,6 +1,6 @@
-import threading
 import logging
-from typing import Dict, Any, Optional, List
+import threading
+from typing import Any, Dict, List, Optional
 
 
 class SharedDataStore:
@@ -26,7 +26,9 @@ class SharedDataStore:
             if identifier not in self._data:
                 self._data[identifier] = {}
             self._data[identifier].update(data)
-            logging.info(f"Stored data for identifier: {identifier}, keys: {list(data.keys())}")
+            logging.info(
+                f"Stored data for identifier: {identifier}, keys: {list(data.keys())}"
+            )
 
     def get(self, identifier: str, key: Optional[str] = None) -> Any:
         """

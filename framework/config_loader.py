@@ -1,7 +1,9 @@
-import os
-import yaml
 import json
-from typing import Dict, Any
+import os
+from typing import Any, Dict
+
+import yaml
+
 from framework.config_validator import ConfigValidator
 
 
@@ -10,14 +12,14 @@ class ConfigLoader:
         self.config_dir = config_dir
         self.validate = validate
         self.validator = ConfigValidator()
-    
+
     def load_config(self, config_file: str) -> Dict[str, Any]:
         """
         Load configuration from a YAML or JSON file.
-        
+
         Args:
             config_file: Path to the configuration file
-            
+
         Returns:
             Dictionary containing the configuration
         """
@@ -26,19 +28,19 @@ class ConfigLoader:
             config_path = os.path.join(self.config_dir, config_file)
         else:
             config_path = config_file
-        
+
         # If file doesn't exist in config_dir, try relative to current directory
         if not os.path.exists(config_path):
             config_path = config_file
-        
+
         if not os.path.exists(config_path):
             raise FileNotFoundError(f"Configuration file not found: {config_file}")
-        
+
         # Load based on file extension
-        with open(config_path, 'r', encoding='utf-8') as f:
-            if config_path.endswith('.yaml') or config_path.endswith('.yml'):
+        with open(config_path, "r", encoding="utf-8") as f:
+            if config_path.endswith(".yaml") or config_path.endswith(".yml"):
                 config = yaml.safe_load(f)
-            elif config_path.endswith('.json'):
+            elif config_path.endswith(".json"):
                 config = json.load(f)
             else:
                 # Try YAML first, then JSON
@@ -48,7 +50,7 @@ class ConfigLoader:
                 except yaml.YAMLError:
                     f.seek(0)
                     config = json.load(f)
-        
+
         # Validate configuration
         if self.validate:
             is_valid, errors, warnings = self.validator.validate(config, config_file)
@@ -56,22 +58,22 @@ class ConfigLoader:
                 error_msg = f"Config validation failed for '{config_file}':\n"
                 error_msg += "\n".join([f"  - {err}" for err in errors])
                 raise ValueError(error_msg)
-        
+
         return config
 
     @staticmethod
     def _validate_config(config: Dict[str, Any]):
         """Legacy validation method - kept for backward compatibility."""
-        required_fields = ['service_name', 'base_url']
+        required_fields = ["service_name", "base_url"]
 
         for field in required_fields:
             if field not in config:
                 raise ValueError(f"Missing required field in config: {field}")
 
         # Validate steps structure if present
-        if 'steps' in config:
-            for i, step in enumerate(config['steps']):
-                if 'method' not in step:
+        if "steps" in config:
+            for i, step in enumerate(config["steps"]):
+                if "method" not in step:
                     raise ValueError(f"Step {i} missing required 'method' field")
-                if 'endpoint' not in step:
+                if "endpoint" not in step:
                     raise ValueError(f"Step {i} missing required 'endpoint' field")
