@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+- [Why We Built This](#why-we-built-this)
 - [Features](#features)
 - [Quick Start](#quick-start)
 - [Installation](#installation)
@@ -20,6 +21,31 @@
 - [Examples](#examples)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
+
+## Why We Built This
+
+Writing Locust tests usually means writing Python — and that's fine for one project. But once you're juggling many services, many environments, and many teams, it quickly becomes painful.
+
+Every project ends up with:
+- Slightly different Locust scripts
+- Repeated boilerplate
+- Copy-paste logic with tiny changes
+- Yet another Python file to maintain
+
+At some point the question becomes:
+
+**"Why am I rewriting Python just to describe HTTP flows?"**
+
+Locust Flow was built to fix that.
+
+Instead of treating load tests as code, it treats them as configuration:
+- API flows belong in YAML/JSON
+- Logic should be reusable, not rewritten
+- Adding a new service should not mean adding new Python files
+
+The goal is simple: **define traffic once, reuse it everywhere** — without the mental overhead of maintaining Python test code across dozens of projects.
+
+If you've ever felt annoyed writing Python just to load test another API, Locust Flow is for you.
 
 ## Example
 
