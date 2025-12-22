@@ -41,17 +41,6 @@ class ConfigValidator:
         self._validate_transforms(config)
 
         is_valid = len(self.errors) == 0
-
-        if not is_valid:
-            logging.error(f"Config validation failed for '{config_file}':")
-            for error in self.errors:
-                logging.error(f"  ERROR: {error}")
-
-        if self.warnings:
-            logging.warning(f"Config warnings for '{config_file}':")
-            for warning in self.warnings:
-                logging.warning(f"  WARNING: {warning}")
-
         return is_valid, self.errors, self.warnings
 
     def _validate_top_level_keys(self, config: Dict[str, Any]):
@@ -213,6 +202,26 @@ class ConfigValidator:
                     f"{path}: 'pre_request' cannot be empty. "
                     "Either provide a value or remove the field."
                 )
+
+        # Validate that Content-Type header is required when using 'data' field
+        if "data" in step:
+            if "headers" not in step:
+                self.errors.append(
+                    f"{path}: 'headers' field with 'Content-Type' is required when using 'data' field. "
+                    "Specify Content-Type (e.g., 'application/json', 'application/x-www-form-urlencoded')"
+                )
+            else:
+                headers = step["headers"]
+                if isinstance(headers, dict):
+                    # Check for Content-Type (case-insensitive)
+                    has_content_type = any(
+                        key.lower() == "content-type" for key in headers.keys()
+                    )
+                    if not has_content_type:
+                        self.errors.append(
+                            f"{path}: 'Content-Type' header is required when using 'data' field. "
+                            "Specify Content-Type (e.g., 'application/x-www-form-urlencoded')"
+                        )
 
         # Validate weight if present
         if "weight" in step:

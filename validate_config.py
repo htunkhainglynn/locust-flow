@@ -46,16 +46,16 @@ def validate_file(config_path: str) -> bool:
             if warnings:
                 print(f"\n[WARNING] {len(warnings)} Warning(s):")
                 for warning in warnings:
-                    print(f"  - {warning}")
+                    print(f"  - {config_path}: {warning}")
         else:
             print("[INVALID] Config is invalid")
             print(f"\n[ERROR] {len(errors)} Error(s):")
             for error in errors:
-                print(f"  - {error}")
+                print(f"  - {config_path}: {error}")
             if warnings:
                 print(f"\n[WARNING] {len(warnings)} Warning(s):")
                 for warning in warnings:
-                    print(f"  - {warning}")
+                    print(f"  - {config_path}: {warning}")
         
         return is_valid
         

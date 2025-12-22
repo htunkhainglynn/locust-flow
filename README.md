@@ -110,6 +110,7 @@ steps:
     endpoint: "/cart"
     headers:
       Authorization: "Bearer {{ token }}"
+      Content-Type: "application/x-www-form-urlencoded"
     data:
       product_id: "{{ product_id }}"
       quantity: "{{ quantity }}"
@@ -229,6 +230,8 @@ steps:
       Authorization: "Bearer {{ token }}"
 ```
 
+**Important:** When using the `data` field for form data, you **must** include a `Content-Type` header (e.g., `application/x-www-form-urlencoded` or `application/json`). 
+
 ### Multi-User Setup
 
 ```yaml
@@ -247,6 +250,10 @@ variables:
 
 init:
   - name: "Login"
+    method: "POST"
+    endpoint: "/auth/login"
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
     pre_transforms:
       - type: "select_from_list"
         config:
