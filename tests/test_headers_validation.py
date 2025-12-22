@@ -24,11 +24,9 @@ class TestHeadersValidation(unittest.TestCase):
                     "name": "Test Step",
                     "method": "POST",
                     "endpoint": "/test",
-                    "data": {
-                        "key": "value"
-                    }
+                    "data": {"key": "value"},
                 }
-            ]
+            ],
         }
 
         is_valid, errors, warnings = self.validator.validate(config)
@@ -47,14 +45,10 @@ class TestHeadersValidation(unittest.TestCase):
                     "name": "Test Step",
                     "method": "POST",
                     "endpoint": "/test",
-                    "headers": {
-                        "Content-Type": "application/x-www-form-urlencoded"
-                    },
-                    "data": {
-                        "key": "value"
-                    }
+                    "headers": {"Content-Type": "application/x-www-form-urlencoded"},
+                    "data": {"key": "value"},
                 }
-            ]
+            ],
         }
 
         is_valid, errors, warnings = self.validator.validate(config)
@@ -72,14 +66,10 @@ class TestHeadersValidation(unittest.TestCase):
                     "name": "Test Step",
                     "method": "POST",
                     "endpoint": "/test",
-                    "headers": {
-                        "Authorization": "Bearer token"
-                    },
-                    "data": {
-                        "key": "value"
-                    }
+                    "headers": {"Authorization": "Bearer token"},
+                    "data": {"key": "value"},
                 }
-            ]
+            ],
         }
 
         is_valid, errors, warnings = self.validator.validate(config)
@@ -97,14 +87,10 @@ class TestHeadersValidation(unittest.TestCase):
                     "name": "Test Step",
                     "method": "POST",
                     "endpoint": "/test",
-                    "headers": {
-                        "content-type": "application/x-www-form-urlencoded"
-                    },
-                    "data": {
-                        "key": "value"
-                    }
+                    "headers": {"content-type": "application/x-www-form-urlencoded"},
+                    "data": {"key": "value"},
                 }
-            ]
+            ],
         }
 
         is_valid, errors, warnings = self.validator.validate(config)
@@ -122,11 +108,9 @@ class TestHeadersValidation(unittest.TestCase):
                     "name": "Test Step",
                     "method": "POST",
                     "endpoint": "/test",
-                    "json": {
-                        "key": "value"
-                    }
+                    "json": {"key": "value"},
                 }
-            ]
+            ],
         }
 
         is_valid, errors, warnings = self.validator.validate(config)
@@ -144,18 +128,10 @@ class TestHeadersValidation(unittest.TestCase):
                     "name": "Init Step",
                     "method": "POST",
                     "endpoint": "/init",
-                    "data": {
-                        "key": "value"
-                    }
+                    "data": {"key": "value"},
                 }
             ],
-            "steps": [
-                {
-                    "name": "Test Step",
-                    "method": "GET",
-                    "endpoint": "/test"
-                }
-            ]
+            "steps": [{"name": "Test Step", "method": "GET", "endpoint": "/test"}],
         }
 
         is_valid, errors, warnings = self.validator.validate(config)
@@ -173,37 +149,31 @@ class TestHeadersValidation(unittest.TestCase):
                     "name": "Step 1",
                     "method": "POST",
                     "endpoint": "/test1",
-                    "headers": {
-                        "Content-Type": "application/x-www-form-urlencoded"
-                    },
-                    "data": {
-                        "key": "value"
-                    }
+                    "headers": {"Content-Type": "application/x-www-form-urlencoded"},
+                    "data": {"key": "value"},
                 },
                 {
                     "name": "Step 2",
                     "method": "POST",
                     "endpoint": "/test2",
-                    "data": {
-                        "key": "value"
-                    }
+                    "data": {"key": "value"},
                 },
                 {
                     "name": "Step 3",
                     "method": "POST",
                     "endpoint": "/test3",
-                    "data": {
-                        "key": "value"
-                    }
-                }
-            ]
+                    "data": {"key": "value"},
+                },
+            ],
         }
 
         is_valid, errors, warnings = self.validator.validate(config)
 
         self.assertFalse(is_valid)
         # Should have 2 errors (Step 2 and Step 3)
-        headers_errors = [e for e in errors if "headers" in e.lower() and "data" in e.lower()]
+        headers_errors = [
+            e for e in errors if "headers" in e.lower() and "data" in e.lower()
+        ]
         self.assertEqual(len(headers_errors), 2)
 
 
