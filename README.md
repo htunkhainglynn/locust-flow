@@ -283,7 +283,6 @@ init:
 | Plugin | Description | Configuration | Output |
 |--------|-------------|---------------|--------|
 | `select_from_list` | Pick from variable list | `from`, `mode` (round_robin/random) | Selected item |
-| `select_msisdn` | Pick phone number (deprecated) | `from`, `mode` | Phone number |
 
 ### Encryption & Hashing
 
