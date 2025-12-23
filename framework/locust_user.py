@@ -2,7 +2,7 @@ import logging
 import random
 import threading
 
-from locust import FastHttpUser, constant_throughput, task
+from locust import FastHttpUser, constant_throughput, constant, between, constant_pacing, task
 
 from .config_loader import ConfigLoader
 from .flow_executor import FlowExecutor
@@ -200,12 +200,41 @@ def create_user_class(config_file_path: str, wait_time=None, class_name=None):
             )
             print(f"Warning: Could not load config for host setting: {e}")
 
+    # Determine wait_time from config or use provided/default
+    config_wait_time = None
+    try:
+        config = config_loader.load_config(config_file_path)
+        
+        # Check if locust config section exists
+        if "locust" in config:
+            locust_config = config["locust"]
+            wait_time_type = locust_config.get("wait_time", "constant_throughput")
+            
+            if wait_time_type == "constant_throughput":
+                throughput = locust_config.get("throughput", 1)
+                config_wait_time = constant_throughput(throughput)
+            elif wait_time_type == "constant":
+                wait_seconds = locust_config.get("min_wait", 1)
+                config_wait_time = constant(wait_seconds)
+            elif wait_time_type == "between":
+                min_wait = locust_config.get("min_wait", 1)
+                max_wait = locust_config.get("max_wait", 3)
+                config_wait_time = between(min_wait, max_wait)
+            elif wait_time_type == "constant_pacing":
+                pacing = locust_config.get("pacing", 1)
+                config_wait_time = constant_pacing(pacing)
+    except Exception as e:
+        print(f"Warning: Could not load locust config: {e}")
+
+    # Priority: provided wait_time > config wait_time > default
+    final_wait_time = wait_time if wait_time else (config_wait_time if config_wait_time else constant_throughput(1))
+
     user_class = type(
         class_name,
         (ConfigDrivenUser,),
         {
             "config_file": config_file_path,
-            "wait_time": wait_time if wait_time else constant_throughput(1),
+            "wait_time": final_wait_time,
             "__module__": "__main__",
         },
     )

@@ -39,6 +39,7 @@ class ConfigValidator:
         self._validate_retry_on(config)
         self._validate_validation_format(config)
         self._validate_transforms(config)
+        self._validate_locust_config(config)
 
         is_valid = len(self.errors) == 0
         return is_valid, self.errors, self.warnings
@@ -58,6 +59,7 @@ class ConfigValidator:
             "headers",
             "timeout",
             "verify",
+            "locust",
         ]
 
         # Check for unknown keys - STRICT: treat as ERROR
@@ -698,6 +700,116 @@ class ConfigValidator:
 
         if "output" not in transform:
             self.errors.append(f"{path}: 'rsa_encrypt' requires 'output' field")
+
+    def _validate_locust_config(self, config: Dict[str, Any]):
+        """Validate optional locust configuration section."""
+        if "locust" not in config:
+            return
+
+        locust_config = config["locust"]
+        path = "locust"
+
+        if not isinstance(locust_config, dict):
+            self.errors.append(f"{path}: Must be a dictionary")
+            return
+
+        # Valid locust config keys
+        valid_locust_keys = [
+            "wait_time",
+            "throughput",
+            "min_wait",
+            "max_wait",
+            "pacing",
+        ]
+
+        # Check for unknown keys
+        for key in locust_config.keys():
+            if key not in valid_locust_keys:
+                self.warnings.append(
+                    f"{path}: Unknown field '{key}'. Valid fields: {', '.join(valid_locust_keys)}"
+                )
+
+        # Validate wait_time if present
+        if "wait_time" in locust_config:
+            wait_time = locust_config["wait_time"]
+            valid_wait_times = [
+                "constant_throughput",
+                "constant",
+                "between",
+                "constant_pacing",
+            ]
+            if wait_time not in valid_wait_times:
+                self.errors.append(
+                    f"{path}.wait_time: Invalid value '{wait_time}'. "
+                    f"Valid options: {', '.join(valid_wait_times)}"
+                )
+
+            # Validate required fields for each wait_time type
+            if wait_time == "constant_throughput":
+                if "throughput" not in locust_config:
+                    self.errors.append(
+                        f"{path}: 'throughput' is required when wait_time is 'constant_throughput'"
+                    )
+                elif not isinstance(locust_config["throughput"], (int, float)):
+                    self.errors.append(
+                        f"{path}.throughput: Must be a number"
+                    )
+                elif locust_config["throughput"] <= 0:
+                    self.errors.append(
+                        f"{path}.throughput: Must be greater than 0"
+                    )
+
+            elif wait_time == "constant":
+                if "min_wait" not in locust_config:
+                    self.errors.append(
+                        f"{path}: 'min_wait' is required when wait_time is 'constant'"
+                    )
+                elif not isinstance(locust_config["min_wait"], (int, float)):
+                    self.errors.append(
+                        f"{path}.min_wait: Must be a number"
+                    )
+                elif locust_config["min_wait"] < 0:
+                    self.errors.append(
+                        f"{path}.min_wait: Must be non-negative"
+                    )
+
+            elif wait_time == "between":
+                if "min_wait" not in locust_config or "max_wait" not in locust_config:
+                    self.errors.append(
+                        f"{path}: Both 'min_wait' and 'max_wait' are required when wait_time is 'between'"
+                    )
+                else:
+                    min_wait = locust_config.get("min_wait")
+                    max_wait = locust_config.get("max_wait")
+                    
+                    if not isinstance(min_wait, (int, float)):
+                        self.errors.append(f"{path}.min_wait: Must be a number")
+                    if not isinstance(max_wait, (int, float)):
+                        self.errors.append(f"{path}.max_wait: Must be a number")
+                    
+                    if isinstance(min_wait, (int, float)) and isinstance(max_wait, (int, float)):
+                        if min_wait < 0:
+                            self.errors.append(f"{path}.min_wait: Must be non-negative")
+                        if max_wait < 0:
+                            self.errors.append(f"{path}.max_wait: Must be non-negative")
+                        if min_wait > max_wait:
+                            self.errors.append(
+                                f"{path}: 'min_wait' ({min_wait}) cannot be greater than 'max_wait' ({max_wait})"
+                            )
+
+            elif wait_time == "constant_pacing":
+                if "pacing" not in locust_config:
+                    self.errors.append(
+                        f"{path}: 'pacing' is required when wait_time is 'constant_pacing'"
+                    )
+                elif not isinstance(locust_config["pacing"], (int, float)):
+                    self.errors.append(
+                        f"{path}.pacing: Must be a number"
+                    )
+                elif locust_config["pacing"] <= 0:
+                    self.errors.append(
+                        f"{path}.pacing: Must be greater than 0"
+                    )
 
 
 def validate_config_file(config: Dict[str, Any], config_file: str = "config") -> bool:

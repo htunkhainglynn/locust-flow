@@ -232,6 +232,61 @@ steps:
 
 **Important:** When using the `data` field for form data, you **must** include a `Content-Type` header (e.g., `application/x-www-form-urlencoded` or `application/json`). 
 
+### Locust Configuration (Optional)
+
+Control throughput and wait times per service:
+
+```yaml
+service_name: "My API"
+base_url: "https://api.example.com"
+
+# Optional: Configure Locust behavior
+locust:
+  wait_time: "constant_throughput"  # Options: constant_throughput, constant, between, constant_pacing
+  throughput: 5                      # 5 requests per second per user
+
+steps:
+  - name: "API Call"
+    method: "GET"
+    endpoint: "/data"
+```
+
+**Available Options:**
+
+| wait_time | Required Fields | Description | Example |
+|-----------|----------------|-------------|---------|
+| `constant_throughput` | `throughput` | Fixed requests/sec per user | `throughput: 5` = 5 req/s |
+| `constant` | `min_wait` | Fixed wait time (seconds) | `min_wait: 2` = 2s wait |
+| `between` | `min_wait`, `max_wait` | Random wait time (seconds) | `min_wait: 1, max_wait: 3` |
+| `constant_pacing` | `pacing` | Task runs every X seconds | `pacing: 5` = every 5s |
+
+**Examples:**
+
+```yaml
+# High throughput - 10 requests per second per user
+locust:
+  wait_time: "constant_throughput"
+  throughput: 10
+
+# Fixed 2 second wait between requests
+locust:
+  wait_time: "constant"
+  min_wait: 2
+
+# Random wait between 1-5 seconds
+locust:
+  wait_time: "between"
+  min_wait: 1
+  max_wait: 5
+
+# Ensure task runs every 3 seconds
+locust:
+  wait_time: "constant_pacing"
+  pacing: 3
+```
+
+**Note:** If not specified, defaults to `constant_throughput` with 1 request/second per user.
+
 ### Multi-User Setup
 
 ```yaml
