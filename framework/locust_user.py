@@ -2,7 +2,8 @@ import logging
 import random
 import threading
 
-from locust import FastHttpUser, constant_throughput, constant, between, constant_pacing, task
+from locust import (FastHttpUser, between, constant, constant_pacing,
+                    constant_throughput, task)
 
 from .config_loader import ConfigLoader
 from .flow_executor import FlowExecutor
@@ -204,12 +205,12 @@ def create_user_class(config_file_path: str, wait_time=None, class_name=None):
     config_wait_time = None
     try:
         config = config_loader.load_config(config_file_path)
-        
+
         # Check if locust config section exists
         if "locust" in config:
             locust_config = config["locust"]
             wait_time_type = locust_config.get("wait_time", "constant_throughput")
-            
+
             if wait_time_type == "constant_throughput":
                 throughput = locust_config.get("throughput", 1)
                 config_wait_time = constant_throughput(throughput)
@@ -227,7 +228,11 @@ def create_user_class(config_file_path: str, wait_time=None, class_name=None):
         print(f"Warning: Could not load locust config: {e}")
 
     # Priority: provided wait_time > config wait_time > default
-    final_wait_time = wait_time if wait_time else (config_wait_time if config_wait_time else constant_throughput(1))
+    final_wait_time = (
+        wait_time
+        if wait_time
+        else (config_wait_time if config_wait_time else constant_throughput(1))
+    )
 
     user_class = type(
         class_name,

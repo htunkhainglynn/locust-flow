@@ -1,4 +1,5 @@
 import unittest
+
 from framework.config_validator import ConfigValidator
 
 
@@ -190,7 +191,9 @@ class TestLocustConfig(unittest.TestCase):
         is_valid, errors, warnings = self.validator.validate(config)
 
         self.assertFalse(is_valid)
-        self.assertTrue(any("must be a dictionary" in error.lower() for error in errors))
+        self.assertTrue(
+            any("must be a dictionary" in error.lower() for error in errors)
+        )
 
     def test_unknown_locust_field_warning(self):
         """Test that unknown locust fields generate warnings."""
