@@ -358,11 +358,66 @@ init:
 
 ### Data Storage
 
+The `store_data` plugin stores data in a shared store accessible across all virtual users. It **appends** new data to existing keys without overriding previous values.
+
 | Plugin | Description | Configuration | Purpose |
 |--------|-------------|---------------|----------|
 | `store_data` | Store variables by key | `key`, `values` | Multi-user token management |
 
-**Example:**
+**Key Behavior:**
+- **Same key = Merge**: Multiple calls with the same key add fields without removing existing ones
+- **Thread-safe**: Uses locks to prevent race conditions
+- **Persistent**: Data persists across all virtual users during the test
+
+**Example - Accumulating Data:**
+
+```yaml
+# Step 1: Store token after login
+init:
+  - name: "Login"
+    method: "POST"
+    endpoint: "/auth/login"
+    extract:
+      token: "json.access_token"
+    post_transforms:
+      - type: "store_data"
+        config:
+          key: "user_1234"
+          values:
+            - "token"
+# Result: user_1234 -> {token: "abc123"}
+
+# Step 2: Add QR code to same user
+steps:
+  - name: "Generate QR"
+    method: "POST"
+    endpoint: "/qr/generate"
+    extract:
+      qr_code: "json.qr"
+    post_transforms:
+      - type: "store_data"
+        config:
+          key: "user_1234"      # Same key
+          values:
+            - "qr_code"         # Adds to existing data
+# Result: user_1234 -> {token: "abc123", qr_code: "xyz789"}
+
+# Step 3: Add session ID
+  - name: "Create Session"
+    method: "POST"
+    endpoint: "/session"
+    extract:
+      session_id: "json.session"
+    post_transforms:
+      - type: "store_data"
+        config:
+          key: "user_1234"      # Same key again
+          values:
+            - "session_id"      # Adds to existing data
+# Result: user_1234 -> {token: "abc123", qr_code: "xyz789", session_id: "sess_456"}
+```
+
+**Other Plugin Examples:**
 ```yaml
 pre_transforms:
   - type: "random_number"

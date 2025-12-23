@@ -160,6 +160,116 @@ class TestStoreDataPlugin(unittest.TestCase):
         self.assertEqual(data_store.get("user001", "token"), "abc123")
         self.assertEqual(data_store.get("user001", "device_id"), "device001")
 
+    def test_store_data_appends_without_overriding(self):
+        """Test that store_data appends new data without overriding existing data"""
+        from framework.shared_data_store import SharedDataStore
+
+        data_store = SharedDataStore()
+
+        # First call: Store token
+        context1 = {
+            "_data_store": data_store,
+            "token": "abc123",
+        }
+        config1 = {"key": "user_1234", "values": ["token"]}
+        self.plugin.execute(None, config1, context1)
+
+        # Verify token is stored
+        self.assertTrue(data_store.has_data("user_1234"))
+        self.assertEqual(data_store.get("user_1234", "token"), "abc123")
+
+        # Second call: Add QR code to same key
+        context2 = {
+            "_data_store": data_store,
+            "qr_code": "xyz789",
+        }
+        config2 = {"key": "user_1234", "values": ["qr_code"]}
+        self.plugin.execute(None, config2, context2)
+
+        # Verify both token and qr_code are present
+        self.assertEqual(data_store.get("user_1234", "token"), "abc123")
+        self.assertEqual(data_store.get("user_1234", "qr_code"), "xyz789")
+
+        # Third call: Add session_id to same key
+        context3 = {
+            "_data_store": data_store,
+            "session_id": "sess_456",
+        }
+        config3 = {"key": "user_1234", "values": ["session_id"]}
+        self.plugin.execute(None, config3, context3)
+
+        # Verify all three values are present
+        self.assertEqual(data_store.get("user_1234", "token"), "abc123")
+        self.assertEqual(data_store.get("user_1234", "qr_code"), "xyz789")
+        self.assertEqual(data_store.get("user_1234", "session_id"), "sess_456")
+
+        # Verify we can get all data at once
+        all_data = data_store.get("user_1234")
+        self.assertEqual(len(all_data), 3)
+        self.assertIn("token", all_data)
+        self.assertIn("qr_code", all_data)
+        self.assertIn("session_id", all_data)
+
+    def test_store_data_multiple_keys_independent(self):
+        """Test that different keys maintain independent data"""
+        from framework.shared_data_store import SharedDataStore
+
+        data_store = SharedDataStore()
+
+        # Store data for user_1234
+        context1 = {
+            "_data_store": data_store,
+            "token": "token_1234",
+            "qr_code": "qr_1234",
+        }
+        config1 = {"key": "user_1234", "values": ["token", "qr_code"]}
+        self.plugin.execute(None, config1, context1)
+
+        # Store data for user_5678
+        context2 = {
+            "_data_store": data_store,
+            "token": "token_5678",
+            "qr_code": "qr_5678",
+        }
+        config2 = {"key": "user_5678", "values": ["token", "qr_code"]}
+        self.plugin.execute(None, config2, context2)
+
+        # Verify data is independent
+        self.assertEqual(data_store.get("user_1234", "token"), "token_1234")
+        self.assertEqual(data_store.get("user_1234", "qr_code"), "qr_1234")
+        self.assertEqual(data_store.get("user_5678", "token"), "token_5678")
+        self.assertEqual(data_store.get("user_5678", "qr_code"), "qr_5678")
+
+        # Verify count
+        self.assertEqual(data_store.get_count(), 2)
+
+    def test_store_data_updates_existing_value(self):
+        """Test that storing the same field updates its value"""
+        from framework.shared_data_store import SharedDataStore
+
+        data_store = SharedDataStore()
+
+        # Store initial token
+        context1 = {
+            "_data_store": data_store,
+            "token": "old_token",
+        }
+        config1 = {"key": "user_1234", "values": ["token"]}
+        self.plugin.execute(None, config1, context1)
+
+        self.assertEqual(data_store.get("user_1234", "token"), "old_token")
+
+        # Update token with new value
+        context2 = {
+            "_data_store": data_store,
+            "token": "new_token",
+        }
+        config2 = {"key": "user_1234", "values": ["token"]}
+        self.plugin.execute(None, config2, context2)
+
+        # Verify token is updated
+        self.assertEqual(data_store.get("user_1234", "token"), "new_token")
+
 
 class TestSHA256Plugin(unittest.TestCase):
 
