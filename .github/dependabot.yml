@@ -1,6 +1,5 @@
 version: 2
 updates:
-  # Python dependencies
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
@@ -15,8 +14,9 @@ updates:
       - "htunkhainglynn"
     assignees:
       - "htunkhainglynn"
+    versioning-strategy: "increase-with-minor-patch"
+    auto-merge: true
 
-  # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -27,3 +27,5 @@ updates:
     commit-message:
       prefix: "ci"
       include: "scope"
+    versioning-strategy: "increase-with-minor-patch"
+    auto-merge: true
