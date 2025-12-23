@@ -2,6 +2,7 @@ help:
 	@echo "Locust Flow - Makefile Commands"
 	@echo ""
 	@echo "Setup:"
+	@echo "  make venv             Create virtual environment"
 	@echo "  make install          Install dependencies"
 	@echo "  make install-dev      Install dev dependencies"
 	@echo "  make install-hooks    Install git pre-commit hooks"
@@ -37,6 +38,15 @@ help:
 	@echo "CI:"
 	@echo "  make ci               Run all CI checks (test, lint, security)"
 	@echo "  make all              Run everything (install, test, lint, security)"
+
+venv:
+	@echo "Creating virtual environment..."
+	python3 -m venv .venv
+	@echo ""
+	@echo "Virtual environment created!"
+	@echo "Activate it with:"
+	@echo "  source .venv/bin/activate    (Linux/Mac)"
+	@echo "  .venv\\Scripts\\activate      (Windows)"
 
 install:
 	@echo "Installing dependencies..."
@@ -171,6 +181,11 @@ clean:
 	rm -rf coverage.xml
 	rm -rf bandit-report.json
 	@echo "Cleanup complete!"
+
+clean-venv:
+	@echo "Removing virtual environment..."
+	rm -rf .venv
+	@echo "Virtual environment removed!"
 
 ci: test lint security validate-configs
 	@echo ""

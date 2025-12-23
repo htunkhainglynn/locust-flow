@@ -160,17 +160,33 @@ make run
 
 ## Quick Start
 
-### 1. Install Dependencies
+### 1. Create Virtual Environment (Recommended)
+
+```bash
+# Create virtual environment
+make venv
+
+# Activate it
+source .venv/bin/activate    # Linux/Mac
+.venv\Scripts\activate       # Windows
+```
+
+**Why use a virtual environment?**
+- Isolates project dependencies
+- Prevents conflicts with system packages
+- Easy to recreate and share
+
+### 2. Install Dependencies
 ```bash
 make install
 ```
 
-### 2. Validate Your Config
+### 3. Validate Your Config
 ```bash
 make validate-configs
 ```
 
-### 3. Run Load Test
+### 4. Run Load Test
 ```bash
 # Web UI (recommended)
 make run
@@ -188,10 +204,22 @@ make run-headless
 | **Error Handling** | Automatic error detection and reporting |
 | **Best Practices** | Built-in optimizations and safety checks |
 
-### Manual Run (Not Recommended)
+### Manual Setup (Not Recommended)
 ```bash
 # Only if you can't use make
-python validate_config.py configs/*.yaml  # Validate first!
+
+# 1. Create virtual environment
+python3 -m venv .venv
+source .venv/bin/activate    # Linux/Mac
+.venv\Scripts\activate       # Windows
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Validate configs
+python validate_config.py configs/*.yaml
+
+# 4. Run Locust
 locust -f main.py
 # Open http://localhost:8089
 ```
