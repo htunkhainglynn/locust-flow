@@ -1,14 +1,11 @@
 """Unit tests for generator plugins (random_string, random_number, etc.)"""
+
 import unittest
 
-from framework.plugins.generators import (
-    IncrementPlugin,
-    RandomNumberPlugin,
-    RandomStringPlugin,
-    SelectFromListPlugin,
-    TimestampPlugin,
-    UUIDPlugin,
-)
+from framework.plugins.generators import (IncrementPlugin, RandomNumberPlugin,
+                                          RandomStringPlugin,
+                                          SelectFromListPlugin,
+                                          TimestampPlugin, UUIDPlugin)
 
 
 class TestRandomNumberPlugin(unittest.TestCase):

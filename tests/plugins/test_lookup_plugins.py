@@ -1,7 +1,7 @@
 import unittest
 
-from framework.plugins.lookup import LookupPlugin, LookupAllPlugin
 from framework.plugins.datastore import GetStoreKeysPlugin
+from framework.plugins.lookup import LookupAllPlugin, LookupPlugin
 from framework.shared_data_store import SharedDataStore
 
 
@@ -15,28 +15,23 @@ class TestLookupPlugin(unittest.TestCase):
     def test_lookup_single_field(self):
         """Test looking up a single field from stored data"""
         # Store test data
-        self.data_store.store("user_102", {
-            "email_prefix": "abc123",
-            "telco_code": "12",
-            "phone_number": "12345678"
-        })
+        self.data_store.store(
+            "user_102",
+            {"email_prefix": "abc123", "telco_code": "12", "phone_number": "12345678"},
+        )
 
         context = {"_data_store": self.data_store}
-        config = {
-            "store_key": "user_102",
-            "field": "email_prefix"
-        }
+        config = {"store_key": "user_102", "field": "email_prefix"}
 
         result = self.plugin.execute(None, config, context)
         self.assertEqual(result, "abc123")
 
     def test_lookup_different_field(self):
         """Test looking up different fields from the same key"""
-        self.data_store.store("user_102", {
-            "email_prefix": "abc123",
-            "telco_code": "12",
-            "phone_number": "12345678"
-        })
+        self.data_store.store(
+            "user_102",
+            {"email_prefix": "abc123", "telco_code": "12", "phone_number": "12345678"},
+        )
 
         context = {"_data_store": self.data_store}
 
@@ -53,32 +48,25 @@ class TestLookupPlugin(unittest.TestCase):
     def test_lookup_missing_key(self):
         """Test lookup with non-existent key raises error"""
         context = {"_data_store": self.data_store}
-        config = {
-            "store_key": "user_999",
-            "field": "email_prefix"
-        }
+        config = {"store_key": "user_999", "field": "email_prefix"}
 
         with self.assertRaises(ValueError) as cm:
             self.plugin.execute(None, config, context)
-        
+
         self.assertIn("No data found in store for key: user_999", str(cm.exception))
 
     def test_lookup_missing_field(self):
         """Test lookup with non-existent field raises error"""
-        self.data_store.store("user_102", {
-            "email_prefix": "abc123",
-            "telco_code": "12"
-        })
+        self.data_store.store(
+            "user_102", {"email_prefix": "abc123", "telco_code": "12"}
+        )
 
         context = {"_data_store": self.data_store}
-        config = {
-            "store_key": "user_102",
-            "field": "nonexistent_field"
-        }
+        config = {"store_key": "user_102", "field": "nonexistent_field"}
 
         with self.assertRaises(ValueError) as cm:
             self.plugin.execute(None, config, context)
-        
+
         self.assertIn("Field 'nonexistent_field' not found", str(cm.exception))
 
     def test_lookup_missing_store_key_config(self):
@@ -88,7 +76,7 @@ class TestLookupPlugin(unittest.TestCase):
 
         with self.assertRaises(ValueError) as cm:
             self.plugin.execute(None, config, context)
-        
+
         self.assertIn("store_key not provided", str(cm.exception))
 
     def test_lookup_missing_field_config(self):
@@ -98,7 +86,7 @@ class TestLookupPlugin(unittest.TestCase):
 
         with self.assertRaises(ValueError) as cm:
             self.plugin.execute(None, config, context)
-        
+
         self.assertIn("field not provided", str(cm.exception))
 
 
@@ -115,7 +103,7 @@ class TestLookupAllPlugin(unittest.TestCase):
             "email_prefix": "abc123",
             "telco_code": "12",
             "phone_number": "12345678",
-            "user_id": "102"
+            "user_id": "102",
         }
         self.data_store.store("user_102", test_data)
 
@@ -123,7 +111,7 @@ class TestLookupAllPlugin(unittest.TestCase):
         config = {"store_key": "user_102"}
 
         result = self.plugin.execute(None, config, context)
-        
+
         self.assertIsInstance(result, dict)
         self.assertEqual(len(result), 4)
         self.assertEqual(result["email_prefix"], "abc123")
@@ -138,19 +126,17 @@ class TestLookupAllPlugin(unittest.TestCase):
 
         with self.assertRaises(ValueError) as cm:
             self.plugin.execute(None, config, context)
-        
+
         self.assertIn("No data found in store for key: user_999", str(cm.exception))
 
     def test_lookup_all_multiple_keys(self):
         """Test lookup_all with multiple keys returns correct data"""
-        self.data_store.store("user_102", {
-            "email_prefix": "abc123",
-            "telco_code": "12"
-        })
-        self.data_store.store("user_103", {
-            "email_prefix": "xyz789",
-            "telco_code": "15"
-        })
+        self.data_store.store(
+            "user_102", {"email_prefix": "abc123", "telco_code": "12"}
+        )
+        self.data_store.store(
+            "user_103", {"email_prefix": "xyz789", "telco_code": "15"}
+        )
 
         context = {"_data_store": self.data_store}
 
@@ -173,7 +159,7 @@ class TestLookupAllPlugin(unittest.TestCase):
 
         with self.assertRaises(ValueError) as cm:
             self.plugin.execute(None, config, context)
-        
+
         self.assertIn("store_key not provided", str(cm.exception))
 
 
@@ -190,7 +176,7 @@ class TestGetStoreKeysPlugin(unittest.TestCase):
         config = {}
 
         result = self.plugin.execute(None, config, context)
-        
+
         self.assertIsInstance(result, list)
         self.assertEqual(len(result), 0)
 
@@ -202,7 +188,7 @@ class TestGetStoreKeysPlugin(unittest.TestCase):
         config = {}
 
         result = self.plugin.execute(None, config, context)
-        
+
         self.assertIsInstance(result, list)
         self.assertEqual(len(result), 1)
         self.assertIn("user_102", result)
@@ -217,7 +203,7 @@ class TestGetStoreKeysPlugin(unittest.TestCase):
         config = {}
 
         result = self.plugin.execute(None, config, context)
-        
+
         self.assertIsInstance(result, list)
         self.assertEqual(len(result), 3)
         self.assertIn("user_102", result)
@@ -234,7 +220,7 @@ class TestGetStoreKeysPlugin(unittest.TestCase):
         config = {}
 
         result = self.plugin.execute(None, config, context)
-        
+
         # Should return all keys
         self.assertEqual(len(result), 4)
         for key in keys:
@@ -247,7 +233,7 @@ class TestGetStoreKeysPlugin(unittest.TestCase):
 
         with self.assertRaises(ValueError) as cm:
             self.plugin.execute(None, config, context)
-        
+
         self.assertIn("SharedDataStore not found in context", str(cm.exception))
 
 

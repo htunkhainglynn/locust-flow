@@ -89,12 +89,16 @@ class FlowExecutor:
                 self._apply_transforms(step.get("post_transforms", []))
             except Exception as e:
                 import traceback
-                logging.error(f"post_transforms failed in step '{step_result['name']}': {e}")
+
+                logging.error(
+                    f"post_transforms failed in step '{step_result['name']}': {e}"
+                )
                 logging.error(f"Full traceback: {traceback.format_exc()}")
                 raise
 
         except Exception as e:
             import traceback
+
             step_result["success"] = False
             step_result["error"] = str(e)
             logging.error(f"Step '{step_result['name']}' failed: {e}")
@@ -176,13 +180,22 @@ class FlowExecutor:
                 )
                 if not isinstance(rendered_headers, dict):
                     import logging
-                    logging.error(f"Headers rendering returned {type(rendered_headers)} instead of dict: {rendered_headers}")
-                    raise TypeError(f"Headers must be a dict, got {type(rendered_headers)}")
+
+                    logging.error(
+                        f"Headers rendering returned {type(rendered_headers)} instead of dict: {rendered_headers}"
+                    )
+                    raise TypeError(
+                        f"Headers must be a dict, got {type(rendered_headers)}"
+                    )
                 headers.update(rendered_headers)
             except AttributeError as e:
-                import logging, traceback
+                import logging
+                import traceback
+
                 logging.error(f"Error rendering headers: {e}")
-                logging.error(f"step['headers'] type: {type(step['headers'])}, value: {step['headers']}")
+                logging.error(
+                    f"step['headers'] type: {type(step['headers'])}, value: {step['headers']}"
+                )
                 logging.error(f"Traceback: {traceback.format_exc()}")
                 raise
 
@@ -255,17 +268,20 @@ class FlowExecutor:
         # Handle both old dict format and new list format for validate
         validate_config = step.get("validate", {})
         expected_status = 200  # Default
-        
+
         if isinstance(validate_config, dict):
             # Old format: validate: {status_code: 200}
             expected_status = validate_config.get("status_code", 200)
         elif isinstance(validate_config, list):
             # New format: validate: [{field: "status_code", condition: "equals", expected: 200}]
             for validation in validate_config:
-                if isinstance(validation, dict) and validation.get("field") == "status_code":
+                if (
+                    isinstance(validation, dict)
+                    and validation.get("field") == "status_code"
+                ):
                     expected_status = validation.get("expected", 200)
                     break
-        
+
         if isinstance(expected_status, list):
             success = response.status_code in expected_status
         else:
@@ -297,7 +313,7 @@ class FlowExecutor:
                 transform.get("input", ""), self.context
             )
             config = transform.get("config", {})
-            
+
             rendered_config = self.template_engine.render(config, self.context)
 
             try:
@@ -310,6 +326,7 @@ class FlowExecutor:
 
             except Exception as e:
                 import traceback
+
                 logging.error(f"Transform '{transform_type}' failed: {e}")
                 logging.error(f"Traceback: {traceback.format_exc()}")
 

@@ -9,7 +9,7 @@ import unittest
 
 # Discover and run all tests in the plugins directory
 loader = unittest.TestLoader()
-suite = loader.discover('tests/plugins', pattern='test_*.py')
+suite = loader.discover("tests/plugins", pattern="test_*.py")
 
 runner = unittest.TextTestRunner(verbosity=2)
 result = runner.run(suite)

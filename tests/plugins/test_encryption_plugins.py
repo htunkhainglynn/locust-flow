@@ -1,11 +1,9 @@
 """Unit tests for encryption plugins (SHA256, Base64, RSA, etc.)"""
+
 import unittest
 
-from framework.plugins.encryption import (
-    Base64DecodePlugin,
-    Base64EncodePlugin,
-    SHA256Plugin,
-)
+from framework.plugins.encryption import (Base64DecodePlugin,
+                                          Base64EncodePlugin, SHA256Plugin)
 
 
 class TestSHA256Plugin(unittest.TestCase):
@@ -24,7 +22,7 @@ class TestSHA256Plugin(unittest.TestCase):
     def test_sha256_consistency(self):
         """Test that same input produces same hash"""
         input_data = "consistent_data"
-        
+
         result1 = self.plugin.execute(input_data, {}, {})
         result2 = self.plugin.execute(input_data, {}, {})
 

@@ -78,4 +78,3 @@ class SharedDataStore:
         """Get the number of identifiers with stored data."""
         with self._lock:
             return len(self._data)
-

@@ -1,14 +1,15 @@
 from typing import Dict, Type
 
 from .base import BasePlugin
+from .datastore import GetStoreKeysPlugin
 from .encryption import (Base64DecodePlugin, Base64EncodePlugin, HMACPlugin,
                          RSAEncryptPlugin, SHA256Plugin)
-from .generators import (AppendToListPlugin, IncrementPlugin, RandomChoicePlugin,
-                         RandomNumberPlugin, RandomStringPlugin,
-                         SelectFromListPlugin, SelectMsisdnPlugin,
-                         StoreDataPlugin, TimestampPlugin, UUIDPlugin)
-from .lookup import LookupPlugin, LookupAllPlugin
-from .datastore import GetStoreKeysPlugin
+from .generators import (AppendToListPlugin, IncrementPlugin,
+                         RandomChoicePlugin, RandomNumberPlugin,
+                         RandomStringPlugin, SelectFromListPlugin,
+                         SelectMsisdnPlugin, StoreDataPlugin, TimestampPlugin,
+                         UUIDPlugin)
+from .lookup import LookupAllPlugin, LookupPlugin
 
 
 class PluginRegistry:

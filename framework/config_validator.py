@@ -598,7 +598,11 @@ class ConfigValidator:
             # Validate config structure for specific types
             if transform_type == "select_from_list":
                 self._validate_select_from_list_config(
-                    transform, f"{path}[{idx}]", valid_modes, variables, dynamic_variables
+                    transform,
+                    f"{path}[{idx}]",
+                    valid_modes,
+                    variables,
+                    dynamic_variables,
                 )
             elif transform_type == "random_number":
                 self._validate_random_number_config(transform, f"{path}[{idx}]")

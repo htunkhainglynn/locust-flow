@@ -153,10 +153,12 @@ class SelectFromListPlugin(BasePlugin):
             raise ValueError(
                 "No items provided for select_from_list plugin. Use 'items' or 'from' config."
             )
-        
+
         # Ensure items is a list
         if not isinstance(items, list):
-            raise TypeError(f"Items must be a list, got {type(items).__name__}: {items}")
+            raise TypeError(
+                f"Items must be a list, got {type(items).__name__}: {items}"
+            )
 
         selection_mode = config.get("mode", "random")
 
@@ -245,16 +247,21 @@ class AppendToListPlugin(BasePlugin):
         # Get or create the list
         if list_var not in context:
             context[list_var] = []
-        
+
         current_list = context[list_var]
         if not isinstance(current_list, list):
-            raise ValueError(f"Variable '{list_var}' is not a list, got {type(current_list).__name__}")
+            raise ValueError(
+                f"Variable '{list_var}' is not a list, got {type(current_list).__name__}"
+            )
 
         # Append the value
         current_list.append(value)
-        
+
         import logging
-        logging.info(f"[append_to_list] Appended '{value}' to '{list_var}'. List now has {len(current_list)} items")
+
+        logging.info(
+            f"[append_to_list] Appended '{value}' to '{list_var}'. List now has {len(current_list)} items"
+        )
 
         return current_list
 
@@ -288,10 +295,16 @@ class StoreDataPlugin(BasePlugin):
         if data_to_store:
             data_store.store(identifier, data_to_store)
             import logging
-            logging.info(f"[store_data] Data store now has {data_store.get_count()} keys: {data_store.get_all_identifiers()}")
+
+            logging.info(
+                f"[store_data] Data store now has {data_store.get_count()} keys: {data_store.get_all_identifiers()}"
+            )
         else:
             import logging
-            logging.warning(f"[store_data] No data to store for key '{identifier}' - values_to_store: {values_to_store}, context keys: {list(context.keys())}")
+
+            logging.warning(
+                f"[store_data] No data to store for key '{identifier}' - values_to_store: {values_to_store}, context keys: {list(context.keys())}"
+            )
 
         # Optional: refresh by returning all stored data for this key
         # If output is specified, this will update the output variable with all stored data
@@ -301,10 +314,16 @@ class StoreDataPlugin(BasePlugin):
 
             if all_data:
                 import logging
-                logging.info(f"[store_data] Refreshing with all data for key '{identifier}': {list(all_data.keys())}. Try `refresh: false` to turn off refreshing.")
+
+                logging.info(
+                    f"[store_data] Refreshing with all data for key '{identifier}': {list(all_data.keys())}. Try `refresh: false` to turn off refreshing."
+                )
                 return all_data
             else:
                 import logging
-                logging.warning(f"[store_data] No data found for refresh for key '{identifier}'")
+
+                logging.warning(
+                    f"[store_data] No data found for refresh for key '{identifier}'"
+                )
 
         return input_data

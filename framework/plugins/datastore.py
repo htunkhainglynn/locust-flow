@@ -1,6 +1,7 @@
 """Plugins for interacting with the shared data store."""
 
 from typing import Any, Dict, List
+
 from .base import BasePlugin
 
 
@@ -32,8 +33,11 @@ class GetStoreKeysPlugin(BasePlugin):
             raise ValueError("SharedDataStore not found in context")
 
         keys = data_store.get_all_identifiers()
-        
+
         import logging
-        logging.info(f"[get_store_keys] Retrieved {len(keys)} keys from data store: {keys}")
-        
+
+        logging.info(
+            f"[get_store_keys] Retrieved {len(keys)} keys from data store: {keys}"
+        )
+
         return keys

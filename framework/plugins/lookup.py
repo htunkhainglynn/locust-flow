@@ -1,15 +1,16 @@
 from typing import Any, Dict
+
 from .base import BasePlugin
 
 
 class LookupPlugin(BasePlugin):
     """
     Lookup plugin to retrieve data from SharedDataStore by dynamic key.
-    
+
     This plugin solves the nested template problem by allowing you to:
     1. First select a user ID
     2. Then lookup data for that user from the store
-    
+
     Usage in YAML:
         pre_transforms:
           - type: "select_from_list"
@@ -22,10 +23,10 @@ class LookupPlugin(BasePlugin):
               store_key: "user_{{ selected_user_id }}"
               field: "email_prefix"
             output: "email_prefix"
-    
+
     This replaces the unsupported nested syntax:
         {{ user_{{ selected_user_id }}.email_prefix }}
-    
+
     With a two-step process:
         1. Select user ID → selected_user_id = 1
         2. Lookup data → email_prefix = "abc123xyz"
@@ -53,12 +54,17 @@ class LookupPlugin(BasePlugin):
 
         # Retrieve data from store
         import logging
+
         logging.info(f"[lookup] Looking up key '{store_key}' from store")
-        logging.info(f"[lookup] Data store has {data_store.get_count()} keys: {data_store.get_all_identifiers()}")
-        
+        logging.info(
+            f"[lookup] Data store has {data_store.get_count()} keys: {data_store.get_all_identifiers()}"
+        )
+
         stored_data = data_store.get(store_key)
         if not stored_data:
-            raise ValueError(f"No data found in store for key: {store_key}. Available keys: {data_store.get_all_identifiers()}")
+            raise ValueError(
+                f"No data found in store for key: {store_key}. Available keys: {data_store.get_all_identifiers()}"
+            )
 
         # Get the specific field
         if field not in stored_data:
@@ -73,10 +79,10 @@ class LookupPlugin(BasePlugin):
 class LookupAllPlugin(BasePlugin):
     """
     Lookup all data for a given key from SharedDataStore.
-    
+
     This plugin retrieves all stored data for a key and makes it available
     in the context. Useful when you need multiple fields from the same user.
-    
+
     Usage in YAML:
         pre_transforms:
           - type: "select_from_list"
@@ -88,7 +94,7 @@ class LookupAllPlugin(BasePlugin):
             config:
               store_key: "user_{{ selected_user_id }}"
             output: "user_data"
-    
+
     Then access fields like:
         email: "{{ user_data.email_prefix }}@gmail.com"
         phone: "+60{{ user_data.telco_code }}{{ user_data.phone_number }}"
