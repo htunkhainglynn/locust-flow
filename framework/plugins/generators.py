@@ -299,6 +299,12 @@ class StoreDataPlugin(BasePlugin):
             logging.info(
                 f"[store_data] Data store now has {data_store.get_count()} keys: {data_store.get_all_identifiers()}"
             )
+
+            for key in data_store.get_all_identifiers():
+                stored = data_store.get(key)
+                logging.info(f"{key}: {stored}")
+
+
         else:
             import logging
 
@@ -308,7 +314,7 @@ class StoreDataPlugin(BasePlugin):
 
         # Optional: refresh by returning all stored data for this key
         # If output is specified, this will update the output variable with all stored data
-        refresh = config.get("refresh", True)
+        refresh = config.get("refresh", False)
         if refresh:
             all_data = data_store.get(identifier)
 
@@ -318,6 +324,7 @@ class StoreDataPlugin(BasePlugin):
                 logging.info(
                     f"[store_data] Refreshing with all data for key '{identifier}': {list(all_data.keys())}. Try `refresh: false` to turn off refreshing."
                 )
+
                 return all_data
             else:
                 import logging

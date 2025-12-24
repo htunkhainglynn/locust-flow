@@ -83,6 +83,9 @@ class FlowExecutor:
                 )
                 return step_result
 
+            # refresh context before execute http step
+            self._refresh_context()
+
             self._execute_http_step(step, step_result, is_init=is_init)
 
             try:
@@ -203,7 +206,17 @@ class FlowExecutor:
         clean_kwargs = {
             k: v for k, v in request_kwargs.items() if not k.startswith("_")
         }
+
+        import logging
+        logging.info(f"Request: {method} {url}")
+        logging.info(f"Request headers: {headers}")
+        logging.info(f"Request kwargs: {clean_kwargs}")
+
         response = self.session.request(method, url, **clean_kwargs)
+
+        logging.info(f"Response: {response.status_code}")
+        logging.info(f"Response headers: {response.headers}")
+        logging.info(f"Response text: {response.text}")
 
         self.context["last_response"] = {
             "status_code": response.status_code,
@@ -670,9 +683,18 @@ class FlowExecutor:
             "headers": dict(response.headers),
         }
 
-        # Render template variables
-        left_value = self.template_engine.render(str(left_value), self.context)
+        left_value = self.context.get(left_value)
         right_value = self.template_engine.render(str(right_value), self.context)
+
+        # Render template variables
+        if left_value is None:
+            left_value = self.template_engine.render(str(left_value), self.context)
+
+
+        logging.info("[should_retry_step] Retry on: ")
+        logging.info(f"[should_retry_step] Condition type: {condition_type}")
+        logging.info(f"[should_retry_step] Left value: {left_value}")
+        logging.info(f"[should_retry_step] Right value: {right_value}")
 
         # Check for logical operators in right value
         if "||" in str(right_value):
@@ -728,13 +750,36 @@ class FlowExecutor:
                 return True
         return False
 
-    def _evaluate_condition_with_and(
-        self, condition_type: str, left_value: Any, right_values: list
-    ) -> bool:
-        """Evaluate condition with AND logic - returns True if ALL conditions match."""
-        for right_val in right_values:
-            if not self._evaluate_single_condition(
-                condition_type, left_value, right_val
-            ):
-                return False
-        return True
+    def _refresh_context(self) -> None:
+        data_store = self.context.get("_data_store")
+        if not data_store:
+            return
+
+        flow_init = self.config.get("flow_init")
+        if not flow_init:
+            return
+
+        logging.info(f"[refresh_context] Flow init: {flow_init}")
+
+        output_var = flow_init[0].get("output")
+
+        logging.info(f"[refresh_context] Current key: {output_var}")
+        if not output_var:
+            logging.warning("No data in context to refresh")
+            return
+
+        logging.info(f"[refresh_context] Context: {self.context}")
+
+        current_key = self.context.get(output_var)
+
+        # Get latest stored data for this VU
+        vu_data = data_store.get(current_key)
+        if not vu_data:
+            logging.warning(f"No data found in store for key: {current_key}")
+            return
+
+        # Update both top-level and nested user_creds
+        self.context.update(vu_data)  # top-level like 'wmt_mfs_token', 'msisdn'
+        self.context["user_creds"] = vu_data  # keep nested dict
+
+        logging.info(f"[refresh_context] Updated VU context for key '{current_key}': {vu_data}")
