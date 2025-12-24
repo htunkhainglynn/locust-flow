@@ -315,7 +315,9 @@ locust:
 
 **Note:** If not specified, defaults to `constant_throughput` with 1 request/second per user.
 
-### Multi-User Setup
+### Multi-User Setup with flow_init
+
+The `flow_init` section runs **once per virtual user** after initialization, allowing you to select credentials that persist throughout the user's session.
 
 ```yaml
 run_init_once: true
@@ -326,10 +328,7 @@ variables:
     - "user001"
     - "user002"
     - "user003"
-  passwords:
-    - "pass001"
-    - "pass002"
-    - "pass003"
+  registered_user_keys: []  # Populated during init
 
 init:
   - name: "Login"
@@ -337,23 +336,49 @@ init:
     endpoint: "/auth/login"
     headers:
       Content-Type: "application/x-www-form-urlencoded"
-    pre_transforms:
-      - type: "select_from_list"
-        config:
-          from: "users"
-          mode: "round_robin"
-        output: "username"
     data:
-      username: "{{ username }}"
+      username: "{{ user }}"  # user comes from init_list_var
     extract:
       token: "json.token"
     post_transforms:
+      # Store credentials
       - type: "store_data"
         config:
-          key: "{{ username }}"
+          key: "user_{{ user }}"
           values:
+            - "user"
             - "token"
+      # Add to list of registered users
+      - type: "append_to_list"
+        config:
+          list_var: "registered_user_keys"
+          value: "user_{{ user }}"
+
+# Select credentials once per virtual user
+flow_init:
+  - type: "select_from_list"
+    config:
+      from: "registered_user_keys"
+      mode: "random"
+    output: "selected_user_key"
+  - type: "lookup_all"
+    config:
+      store_key: "{{ selected_user_key }}"
+    output: "user_creds"
+
+steps:
+  - name: "Get Profile"
+    method: "GET"
+    endpoint: "/profile"
+    headers:
+      Authorization: "Bearer {{ user_creds.token }}"
 ```
+
+**Benefits:**
+- ✅ Credentials selected **once per virtual user** (not per step)
+- ✅ Consistent user behavior throughout the session
+- ✅ No repetitive lookups in every step
+- ✅ Better performance and cleaner configuration
 
 ## Plugins
 
@@ -384,65 +409,64 @@ init:
 | `base64_encode` | Base64 encoding | None | Data to encode |
 | `base64_decode` | Base64 decoding | None | Data to decode |
 
-### Data Storage
+### Data Storage & Retrieval
 
-The `store_data` plugin stores data in a shared store accessible across all virtual users. It **appends** new data to existing keys without overriding previous values.
+Store and retrieve data across virtual users with a shared data store.
 
 | Plugin | Description | Configuration | Purpose |
 |--------|-------------|---------------|----------|
-| `store_data` | Store variables by key | `key`, `values` | Multi-user token management |
+| `store_data` | Store variables by key | `key`, `values`, `refresh` (optional) | Multi-user token management |
+| `lookup` | Retrieve single field | `store_key`, `field` | Get specific stored value |
+| `lookup_all` | Retrieve all fields | `store_key` | Get all stored data for a key |
+| `get_store_keys` | Get all stored keys | None | List all available keys |
+| `append_to_list` | Append to list variable | `list_var`, `value` | Build dynamic lists |
 
-**Key Behavior:**
+**Key Behaviors:**
 - **Same key = Merge**: Multiple calls with the same key add fields without removing existing ones
 - **Thread-safe**: Uses locks to prevent race conditions
 - **Persistent**: Data persists across all virtual users during the test
+- **Refresh**: `store_data` with `refresh: true` (default) returns all stored data for the key
 
-**Example - Accumulating Data:**
+**Example - Store and Retrieve Data:**
 
 ```yaml
-# Step 1: Store token after login
-init:
-  - name: "Login"
-    method: "POST"
-    endpoint: "/auth/login"
-    extract:
-      token: "json.access_token"
-    post_transforms:
-      - type: "store_data"
-        config:
-          key: "user_1234"
-          values:
-            - "token"
-# Result: user_1234 -> {token: "abc123"}
+# Store data with refresh (returns all stored data)
+post_transforms:
+  - type: "store_data"
+    config:
+      key: "user_{{ user_id }}"
+      values:
+        - "token"
+        - "device_id"
+      refresh: true  # Default: true, returns all stored data
+    output: "user_data"  # Receives {token: "abc", device_id: "xyz"}
 
-# Step 2: Add QR code to same user
-steps:
-  - name: "Generate QR"
-    method: "POST"
-    endpoint: "/qr/generate"
-    extract:
-      qr_code: "json.qr"
-    post_transforms:
-      - type: "store_data"
-        config:
-          key: "user_1234"      # Same key
-          values:
-            - "qr_code"         # Adds to existing data
-# Result: user_1234 -> {token: "abc123", qr_code: "xyz789"}
+# Lookup single field
+pre_transforms:
+  - type: "lookup"
+    config:
+      store_key: "user_102"
+      field: "token"
+    output: "auth_token"
 
-# Step 3: Add session ID
-  - name: "Create Session"
-    method: "POST"
-    endpoint: "/session"
-    extract:
-      session_id: "json.session"
-    post_transforms:
-      - type: "store_data"
-        config:
-          key: "user_1234"      # Same key again
-          values:
-            - "session_id"      # Adds to existing data
-# Result: user_1234 -> {token: "abc123", qr_code: "xyz789", session_id: "sess_456"}
+# Lookup all fields
+pre_transforms:
+  - type: "lookup_all"
+    config:
+      store_key: "user_102"
+    output: "user_data"  # Gets {token: "abc", device_id: "xyz", ...}
+
+# Get all stored keys
+pre_transforms:
+  - type: "get_store_keys"
+    output: "all_user_keys"  # Gets ["user_102", "user_103", ...]
+
+# Build a list dynamically
+post_transforms:
+  - type: "append_to_list"
+    config:
+      list_var: "registered_users"
+      value: "user_{{ user_id }}"
 ```
 
 **Other Plugin Examples:**
@@ -582,6 +606,7 @@ steps:
 | `init_list_var` | String | No | Variable containing user list |
 | `variables` | Object | No | Global variables |
 | `init` | Array | No | Initialization steps |
+| `flow_init` | Array | No | Per-virtual-user initialization transforms |
 | `steps` | Array | Yes | Main test steps |
 
 ### Step Fields

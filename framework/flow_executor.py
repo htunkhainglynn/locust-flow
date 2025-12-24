@@ -85,12 +85,20 @@ class FlowExecutor:
 
             self._execute_http_step(step, step_result, is_init=is_init)
 
-            self._apply_transforms(step.get("post_transforms", []))
+            try:
+                self._apply_transforms(step.get("post_transforms", []))
+            except Exception as e:
+                import traceback
+                logging.error(f"post_transforms failed in step '{step_result['name']}': {e}")
+                logging.error(f"Full traceback: {traceback.format_exc()}")
+                raise
 
         except Exception as e:
+            import traceback
             step_result["success"] = False
             step_result["error"] = str(e)
             logging.error(f"Step '{step_result['name']}' failed: {e}")
+            logging.error(f"Full error traceback:\n{traceback.format_exc()}")
 
         return step_result
 
@@ -162,10 +170,21 @@ class FlowExecutor:
         headers: Dict[str, Any] = {}
         headers.update(self.default_headers)
         if "headers" in step:
-            rendered_headers = self.template_engine.render(
-                step["headers"], self.context
-            )
-            headers.update(rendered_headers)
+            try:
+                rendered_headers = self.template_engine.render(
+                    step["headers"], self.context
+                )
+                if not isinstance(rendered_headers, dict):
+                    import logging
+                    logging.error(f"Headers rendering returned {type(rendered_headers)} instead of dict: {rendered_headers}")
+                    raise TypeError(f"Headers must be a dict, got {type(rendered_headers)}")
+                headers.update(rendered_headers)
+            except AttributeError as e:
+                import logging, traceback
+                logging.error(f"Error rendering headers: {e}")
+                logging.error(f"step['headers'] type: {type(step['headers'])}, value: {step['headers']}")
+                logging.error(f"Traceback: {traceback.format_exc()}")
+                raise
 
         request_kwargs = self._build_request_kwargs(step, headers)
         clean_kwargs = {
@@ -233,7 +252,20 @@ class FlowExecutor:
         else:
             response_time_ms = 0
 
-        expected_status = step.get("validate", {}).get("status_code", 200)
+        # Handle both old dict format and new list format for validate
+        validate_config = step.get("validate", {})
+        expected_status = 200  # Default
+        
+        if isinstance(validate_config, dict):
+            # Old format: validate: {status_code: 200}
+            expected_status = validate_config.get("status_code", 200)
+        elif isinstance(validate_config, list):
+            # New format: validate: [{field: "status_code", condition: "equals", expected: 200}]
+            for validation in validate_config:
+                if isinstance(validation, dict) and validation.get("field") == "status_code":
+                    expected_status = validation.get("expected", 200)
+                    break
+        
         if isinstance(expected_status, list):
             success = response.status_code in expected_status
         else:
@@ -265,6 +297,7 @@ class FlowExecutor:
                 transform.get("input", ""), self.context
             )
             config = transform.get("config", {})
+            
             rendered_config = self.template_engine.render(config, self.context)
 
             try:
@@ -276,7 +309,9 @@ class FlowExecutor:
                     self.context[output_var] = result
 
             except Exception as e:
+                import traceback
                 logging.error(f"Transform '{transform_type}' failed: {e}")
+                logging.error(f"Traceback: {traceback.format_exc()}")
 
     def _extract_variables(self, step: Dict[str, Any], response: requests.Response):
         extracts = step.get("extract", {})
@@ -465,13 +500,21 @@ class FlowExecutor:
     def _extract_field_value(self, field_path: str, response: requests.Response):
         """Extract value from response based on field path."""
         # Handle special response fields
-        if field_path == "response.status_code":
+        if field_path == "status_code" or field_path == "response.status_code":
             return str(response.status_code)
-        elif field_path == "response.text":
+        elif field_path == "text" or field_path == "response.text":
             return response.text
         elif field_path.startswith("headers."):
             header_name = field_path.replace("headers.", "")
             return response.headers.get(header_name, "")
+        elif field_path.startswith("json."):
+            # Extract from JSON response
+            json_path = field_path.replace("json.", "")
+            try:
+                response_json = response.json()
+                return self._get_nested_value(response_json, json_path)
+            except (json.JSONDecodeError, ValueError):
+                return None
         elif field_path.startswith("response."):
             # Extract from JSON response
             json_path = field_path.replace("response.", "")
@@ -481,7 +524,12 @@ class FlowExecutor:
             except (json.JSONDecodeError, ValueError):
                 return None
         else:
-            return None
+            # Try as JSON path without prefix
+            try:
+                response_json = response.json()
+                return self._get_nested_value(response_json, field_path)
+            except (json.JSONDecodeError, ValueError):
+                return None
 
     def _get_nested_value(self, data: dict, path: str):
         """Get nested value from dict using dot notation."""

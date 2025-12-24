@@ -42,7 +42,6 @@ def validate_file(config_path: str) -> bool:
         is_valid, errors, warnings = validator.validate(config, config_path)
         
         if is_valid:
-            print("[VALID] Config is valid")
             if warnings:
                 print(f"\n[WARNING] {len(warnings)} Warning(s):")
                 for warning in warnings:

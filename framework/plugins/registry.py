@@ -3,10 +3,12 @@ from typing import Dict, Type
 from .base import BasePlugin
 from .encryption import (Base64DecodePlugin, Base64EncodePlugin, HMACPlugin,
                          RSAEncryptPlugin, SHA256Plugin)
-from .generators import (IncrementPlugin, RandomChoicePlugin,
+from .generators import (AppendToListPlugin, IncrementPlugin, RandomChoicePlugin,
                          RandomNumberPlugin, RandomStringPlugin,
                          SelectFromListPlugin, SelectMsisdnPlugin,
                          StoreDataPlugin, TimestampPlugin, UUIDPlugin)
+from .lookup import LookupPlugin, LookupAllPlugin
+from .datastore import GetStoreKeysPlugin
 
 
 class PluginRegistry:
@@ -17,20 +19,24 @@ class PluginRegistry:
 
     def _register_default_plugins(self):
         default_plugins = [
-            RSAEncryptPlugin(),
-            HMACPlugin(),
-            SHA256Plugin(),
-            Base64EncodePlugin(),
-            Base64DecodePlugin(),
-            UUIDPlugin(),
-            TimestampPlugin(),
+            RandomStringPlugin(),
             RandomNumberPlugin(),
             RandomChoicePlugin(),
-            RandomStringPlugin(),
+            TimestampPlugin(),
+            UUIDPlugin(),
             IncrementPlugin(),
+            SelectMsisdnPlugin(),
             SelectFromListPlugin(),
-            SelectMsisdnPlugin(),  # Kept for backward compatibility
+            AppendToListPlugin(),
             StoreDataPlugin(),
+            Base64EncodePlugin(),
+            Base64DecodePlugin(),
+            SHA256Plugin(),
+            HMACPlugin(),
+            RSAEncryptPlugin(),
+            LookupPlugin(),
+            LookupAllPlugin(),
+            GetStoreKeysPlugin(),
         ]
 
         for plugin in default_plugins:

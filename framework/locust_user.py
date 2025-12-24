@@ -51,6 +51,7 @@ class ConfigDrivenUser(FastHttpUser):
                             user_list = self.config.get("variables", {}).get(
                                 user_list_var, []
                             )
+
                             if not user_list:
                                 raise ValueError(
                                     f"No list found in variables['{user_list_var}'] for run_init_once mode"
@@ -111,6 +112,11 @@ class ConfigDrivenUser(FastHttpUser):
                     if not key.startswith("_"):
                         self.flow_executor.set_variable(key, value)
 
+                # Execute flow_init transforms (runs once per virtual user)
+                flow_init_transforms = self.config.get("flow_init", [])
+                if flow_init_transforms:
+                    self.flow_executor._apply_transforms(flow_init_transforms)
+
                 logging.info(
                     f"User initialized with shared context for service: {self.config.get('service_name')}"
                 )
@@ -120,6 +126,11 @@ class ConfigDrivenUser(FastHttpUser):
                 init_steps = self.config.get("init", [])
                 for step in init_steps:
                     self.flow_executor._execute_step(step, is_init=True)
+
+                # Execute flow_init transforms (runs once per virtual user)
+                flow_init_transforms = self.config.get("flow_init", [])
+                if flow_init_transforms:
+                    self.flow_executor._apply_transforms(flow_init_transforms)
 
                 logging.info(
                     f"Initialized user for service: {self.config.get('service_name')}"

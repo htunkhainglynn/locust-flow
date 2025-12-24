@@ -115,15 +115,15 @@ class TestSharedDataStore(unittest.TestCase):
 
         self.assertEqual(self.store.get_count(), 10)
 
-    def test_backward_compatibility_alias(self):
-        """Test TokenManager alias for backward compatibility"""
-        from framework.shared_data_store import TokenManager
+    def test_shared_data_store_instance(self):
+        """Test SharedDataStore can be instantiated and used"""
+        from framework.shared_data_store import SharedDataStore
 
-        token_manager = TokenManager()
-        token_manager.store("user001", {"token": "abc123"})
+        data_store = SharedDataStore()
+        data_store.store("user001", {"token": "abc123"})
 
-        self.assertTrue(token_manager.has_data("user001"))
-        self.assertEqual(token_manager.get("user001", "token"), "abc123")
+        self.assertTrue(data_store.has_data("user001"))
+        self.assertEqual(data_store.get("user001", "token"), "abc123")
 
 
 if __name__ == "__main__":

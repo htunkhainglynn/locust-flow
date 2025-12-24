@@ -139,13 +139,24 @@ class SelectFromListPlugin(BasePlugin):
         if not items:
             # Try to get from context using variable name
             items_var = config.get("from")
-            if items_var:
-                items = context.get(items_var, [])
+            item_list = context.get(items_var)
+
+            if item_list:
+                # If items_var is already a list (template engine rendered it), use it directly
+                if isinstance(item_list, list):
+                    items = item_list
+                else:
+                    # Otherwise, look it up in context by name
+                    items = context.get(item_list, [])
 
         if not items:
             raise ValueError(
                 "No items provided for select_from_list plugin. Use 'items' or 'from' config."
             )
+        
+        # Ensure items is a list
+        if not isinstance(items, list):
+            raise TypeError(f"Items must be a list, got {type(items).__name__}: {items}")
 
         selection_mode = config.get("mode", "random")
 
@@ -203,6 +214,51 @@ class SelectMsisdnPlugin(BasePlugin):
         return selected
 
 
+class AppendToListPlugin(BasePlugin):
+    """Append a value to a list variable in the context."""
+
+    def __init__(self):
+        super().__init__("append_to_list")
+
+    def execute(
+        self, input_data: Any, config: Dict[str, Any], context: Dict[str, Any]
+    ) -> Any:
+        """
+        Append a value to a list variable.
+
+        Args:
+            input_data: Not used
+            config: Configuration with 'list_var' and 'value'
+            context: Execution context
+
+        Returns:
+            The updated list
+        """
+        list_var = config.get("list_var")
+        if not list_var:
+            raise ValueError("'list_var' is required for append_to_list plugin")
+
+        value = config.get("value")
+        if value is None:
+            raise ValueError("'value' is required for append_to_list plugin")
+
+        # Get or create the list
+        if list_var not in context:
+            context[list_var] = []
+        
+        current_list = context[list_var]
+        if not isinstance(current_list, list):
+            raise ValueError(f"Variable '{list_var}' is not a list, got {type(current_list).__name__}")
+
+        # Append the value
+        current_list.append(value)
+        
+        import logging
+        logging.info(f"[append_to_list] Appended '{value}' to '{list_var}'. List now has {len(current_list)} items")
+
+        return current_list
+
+
 class StoreDataPlugin(BasePlugin):
     """Store data in shared storage for reuse across virtual users."""
 
@@ -231,5 +287,24 @@ class StoreDataPlugin(BasePlugin):
 
         if data_to_store:
             data_store.store(identifier, data_to_store)
+            import logging
+            logging.info(f"[store_data] Data store now has {data_store.get_count()} keys: {data_store.get_all_identifiers()}")
+        else:
+            import logging
+            logging.warning(f"[store_data] No data to store for key '{identifier}' - values_to_store: {values_to_store}, context keys: {list(context.keys())}")
+
+        # Optional: refresh by returning all stored data for this key
+        # If output is specified, this will update the output variable with all stored data
+        refresh = config.get("refresh", True)
+        if refresh:
+            all_data = data_store.get(identifier)
+
+            if all_data:
+                import logging
+                logging.info(f"[store_data] Refreshing with all data for key '{identifier}': {list(all_data.keys())}. Try `refresh: false` to turn off refreshing.")
+                return all_data
+            else:
+                import logging
+                logging.warning(f"[store_data] No data found for refresh for key '{identifier}'")
 
         return input_data

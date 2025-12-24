@@ -35,6 +35,7 @@ class ConfigValidator:
         self._validate_run_init_once(config)
         self._validate_steps(config)
         self._validate_init_steps(config)
+        self._validate_flow_init(config)
         self._validate_variables(config)
         self._validate_retry_on(config)
         self._validate_validation_format(config)
@@ -52,6 +53,7 @@ class ConfigValidator:
             "base_url",
             "variables",
             "init",
+            "flow_init",
             "steps",
             "cleanup",
             "run_init_once",
@@ -141,6 +143,21 @@ class ConfigValidator:
 
         for idx, step in enumerate(init):
             self._validate_step(step, f"init[{idx}]")
+
+    def _validate_flow_init(self, config: Dict[str, Any]):
+        """Validate flow_init section."""
+        flow_init = config.get("flow_init", [])
+
+        if not flow_init:
+            return
+
+        if not isinstance(flow_init, list):
+            self.errors.append("'flow_init' must be a list of transforms")
+            return
+
+        # flow_init should contain transforms, not full steps
+        # Validate it using the same logic as pre_transforms/post_transforms
+        # This will be validated in _validate_transforms method
 
     def _validate_step(self, step: Dict[str, Any], path: str):
         """Validate a single step."""
@@ -470,7 +487,11 @@ class ConfigValidator:
             "increment",
             "select_from_list",
             "select_msisdn",
+            "append_to_list",
             "store_data",
+            "lookup",
+            "lookup_all",
+            "get_store_keys",
         ]
 
         # Valid modes for select_from_list
@@ -484,13 +505,29 @@ class ConfigValidator:
         all_steps.extend(config.get("steps", []))
         all_steps.extend(config.get("cleanup", []))
 
+        # Track variables created by transform outputs
+        dynamic_variables = set()
+
+        # Validate flow_init transforms
+        flow_init = config.get("flow_init", [])
+        if flow_init:
+            if isinstance(flow_init, list):
+                self._validate_transform_list(
+                    flow_init,
+                    "flow_init",
+                    valid_types,
+                    valid_modes,
+                    variables,
+                    dynamic_variables,
+                )
+
         for step in all_steps:
             if not isinstance(step, dict):
                 continue
 
             step_name = step.get("name", "unnamed")
 
-            # Validate pre_transforms
+            # Validate pre_transforms and collect output variables
             if "pre_transforms" in step:
                 self._validate_transform_list(
                     step["pre_transforms"],
@@ -498,9 +535,10 @@ class ConfigValidator:
                     valid_types,
                     valid_modes,
                     variables,
+                    dynamic_variables,
                 )
 
-            # Validate post_transforms
+            # Validate post_transforms and collect output variables
             if "post_transforms" in step:
                 self._validate_transform_list(
                     step["post_transforms"],
@@ -508,6 +546,7 @@ class ConfigValidator:
                     valid_types,
                     valid_modes,
                     variables,
+                    dynamic_variables,
                 )
 
     def _validate_transform_list(
@@ -517,6 +556,7 @@ class ConfigValidator:
         valid_types: list,
         valid_modes: list,
         variables: Dict[str, Any] = None,
+        dynamic_variables: set = None,
     ):
         """Validate a list of transforms."""
         if not isinstance(transforms, list):
@@ -551,10 +591,14 @@ class ConfigValidator:
                     f"Valid types: {', '.join(valid_types)}"
                 )
 
+            # Track output variables
+            if "output" in transform and dynamic_variables is not None:
+                dynamic_variables.add(transform["output"])
+
             # Validate config structure for specific types
             if transform_type == "select_from_list":
                 self._validate_select_from_list_config(
-                    transform, f"{path}[{idx}]", valid_modes, variables
+                    transform, f"{path}[{idx}]", valid_modes, variables, dynamic_variables
                 )
             elif transform_type == "random_number":
                 self._validate_random_number_config(transform, f"{path}[{idx}]")
@@ -571,6 +615,7 @@ class ConfigValidator:
         path: str,
         valid_modes: list,
         variables: Dict[str, Any] = None,
+        dynamic_variables: set = None,
     ):
         """Validate select_from_list transform configuration."""
         if "config" not in transform:
@@ -591,7 +636,10 @@ class ConfigValidator:
             # Validate that the variable exists
             from_var = config["from"]
             if variables is not None:
-                if from_var not in variables:
+                # Skip validation if the variable is dynamically created by a previous transform
+                if dynamic_variables and from_var in dynamic_variables:
+                    pass  # Variable is created by a previous transform, skip validation
+                elif from_var not in variables:
                     self.errors.append(
                         f"{path}.config.from: Variable '{from_var}' does not exist. "
                         f"Add '{from_var}' to the 'variables' section."

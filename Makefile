@@ -151,12 +151,15 @@ generate-config:
 
 validate-configs:
 	@output=$$(python validate_config.py configs/*.yaml configs/*.yml 2>&1); \
-	if [ $$? -eq 0 ]; then \
-		echo "Config validation passed"; \
+	echo "$$output"; \
+	if echo "$$output" | grep -q "\[ERROR\]"; then \
+		echo "Config validation failed due to errors"; \
+		exit 1; \
+	elif echo "$$output" | grep -q "\[WARNING\]"; then \
+		echo "Config validation passed with warnings"; \
 		exit 0; \
 	else \
-		echo "$$output"; \
-		exit 1; \
+		exit 0; \
 	fi
 
 run: validate-configs

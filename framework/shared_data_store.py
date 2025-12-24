@@ -26,9 +26,6 @@ class SharedDataStore:
             if identifier not in self._data:
                 self._data[identifier] = {}
             self._data[identifier].update(data)
-            logging.info(
-                f"Stored data for identifier: {identifier}, keys: {list(data.keys())}"
-            )
 
     def get(self, identifier: str, key: Optional[str] = None) -> Any:
         """
@@ -82,6 +79,3 @@ class SharedDataStore:
         with self._lock:
             return len(self._data)
 
-
-# Backward compatibility alias
-TokenManager = SharedDataStore
