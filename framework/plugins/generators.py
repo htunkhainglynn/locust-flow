@@ -304,7 +304,6 @@ class StoreDataPlugin(BasePlugin):
                 stored = data_store.get(key)
                 logging.info(f"{key}: {stored}")
 
-
         else:
             import logging
 

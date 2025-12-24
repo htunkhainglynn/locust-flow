@@ -208,6 +208,7 @@ class FlowExecutor:
         }
 
         import logging
+
         logging.info(f"Request: {method} {url}")
         logging.info(f"Request headers: {headers}")
         logging.info(f"Request kwargs: {clean_kwargs}")
@@ -690,7 +691,6 @@ class FlowExecutor:
         if left_value is None:
             left_value = self.template_engine.render(str(left_value), self.context)
 
-
         logging.info("[should_retry_step] Retry on: ")
         logging.info(f"[should_retry_step] Condition type: {condition_type}")
         logging.info(f"[should_retry_step] Left value: {left_value}")
@@ -782,4 +782,6 @@ class FlowExecutor:
         self.context.update(vu_data)  # top-level like 'wmt_mfs_token', 'msisdn'
         self.context["user_creds"] = vu_data  # keep nested dict
 
-        logging.info(f"[refresh_context] Updated VU context for key '{current_key}': {vu_data}")
+        logging.info(
+            f"[refresh_context] Updated VU context for key '{current_key}': {vu_data}"
+        )
